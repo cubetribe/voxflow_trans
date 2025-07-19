@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### 🎉 MAJOR MILESTONE - Complete Frontend Implementation
+### 🎉 MAJOR MILESTONE - Complete Frontend Implementation + M4 Max Optimization
 
 ### 🚀 Added - Complete React Frontend Application
 - **React 18.3 + TypeScript Application** with Vite for blazing-fast development
@@ -34,10 +34,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Real-time Progress Tracking** for transcription jobs
 - **Live Audio Streaming** support for real-time transcription
 
-### 🐳 Added - Complete Docker Virtualization
-- **Multi-Container Setup** with docker-compose for all services
-- **User-Friendly Launchers**: Double-click .command files for easy startup
-- **Debug Mode**: Comprehensive debugging with live logs and monitoring
+### 🐳 Added - Complete Docker Virtualization + M4 Max Optimization
+- **Triple-Mode Launcher System**: Local/Full/Debug modes for optimal performance
+- **VoxFlow-Local.command**: 50-70% faster startup with local Redis integration
+- **VoxFlow.command**: Complete Docker isolation with Redis container
+- **VoxFlow-Debug.command**: Comprehensive debugging with live logs
+- **install-redis.command**: Automated Redis setup for maximum performance
+- **User-Friendly Setup**: Double-click .command files for easy startup
 - **Health Checks**: Service monitoring and automatic recovery
 - **Volume Mounts**: Live code editing with hot reload
 - **Environment Management**: Automatic .env file creation

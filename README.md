@@ -91,51 +91,53 @@ graph TB
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### 🎯 **Empfohlener Start (M4 Max Optimiert)**
 
-- **Node.js** 18.x or higher
-- **Python** 3.9 or higher
-- **pnpm** (recommended) or npm
-- **Redis** server
-- **FFmpeg** for audio processing
+1. **Repository klonen**
+   ```bash
+   git clone https://github.com/cubetribe/voxflow_trans.git
+   cd voxflow_trans
+   ```
 
-### Installation
+2. **Docker Desktop starten**
+   - Launcher → Docker Desktop
+   - Warten bis das Whale-Icon in der Menüleiste erscheint
 
+3. **Redis für optimale Performance (optional)**
+   - Doppelklick auf `install-redis.command`
+   - Folge den Anweisungen (automatisches Homebrew + Redis Setup)
+
+4. **VoxFlow starten**
+   - Doppelklick auf **`VoxFlow-Local.command`** ⚡ (empfohlen für M4 Max)
+   - ODER `VoxFlow.command` 🐳 (vollständige Docker-Umgebung)
+   - Browser öffnet automatisch http://localhost:5173
+
+### 🛠️ **Alternative: Manuelle Installation**
+
+#### Prerequisites
+- **macOS** 14+ (optimiert für Apple Silicon)
+- **Docker Desktop** 
+- **Node.js** 18.x+ (optional für lokale Entwicklung)
+- **Python** 3.9+ (optional für lokale Entwicklung)
+- **Redis** (optional, automatisch via `install-redis.command`)
+
+#### Manual Setup
 1. **Clone the repository**
    ```bash
    git clone https://github.com/cubetribe/voxflow_trans.git
    cd voxflow_trans
    ```
 
-2. **Set up the backend services**
+2. **Set up with Docker (Recommended)**
+   ```bash
+   # For optimal M4 Max performance:
+   docker-compose -f docker-compose.local.yml up --build
    
-   **Node.js API Gateway:**
-   ```bash
-   cd backend/node-service
-   npm install
-   cp .env.example .env
-   npm run dev
+   # OR for complete Docker isolation:
+   docker-compose up --build
    ```
 
-   **Python Voxtral Service:**
-   ```bash
-   cd backend/python-service
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   cp .env.example .env
-   uvicorn app.main:app --reload --port 8000
-   ```
-
-3. **Set up the frontend**
-   ```bash
-   cd frontend
-   pnpm install
-   cp .env.example .env.local
-   pnpm dev
-   ```
-
-4. **Access the application**
+3. **Access the application**
    - Frontend: http://localhost:5173
    - API Gateway: http://localhost:3000
    - Python Service: http://localhost:8000
@@ -175,10 +177,13 @@ voxflow_trans/
 
 ### 🔗 Related Documentation
 
-- [Backend Architecture](./voxtral-backend.md) - Detailed backend service documentation
-- [Frontend Stack](./voxtral-frontend.md) - Frontend development guide  
-- [UI/UX Design](./voxtral-ui.md) - Design system and components
+- **[Launcher Guide](./README-LAUNCHER.md)** - **Einfacher Start per Doppelklick** ⚡
+- [Backend Architecture](./plan/voxtral-backend.md) - Detailed backend service documentation
+- [Frontend Stack](./plan/voxtral-frontend.md) - Frontend development guide  
+- [UI/UX Design](./plan/voxtral-ui.md) - Design system and components
 - [Project Structure](./docs/PROJECT_STRUCTURE.md) - Complete codebase navigation
+- [Development Summary](./DEVELOPMENT_SUMMARY.md) - Complete implementation overview
+- [Docker Setup](./DOCKER_SETUP.md) - Advanced Docker development guide
 - [Claude Code Guide](./CLAUDE.md) - AI development assistance
 - [Changelog](./CHANGELOG.md) - Version history and updates
 

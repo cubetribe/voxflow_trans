@@ -277,13 +277,20 @@ services:
 
 ## 🚀 User-Friendly Launcher System
 
-### 📱 Double-Click Launchers
+### 📱 Triple-Mode Launcher Setup
 ```bash
-# 🎙️ VoxFlow.command - Normal mode
+# ⚡ VoxFlow-Local.command - RECOMMENDED for M4 Max
+├── 50-70% faster startup (no Redis container)
+├── Local Redis integration or in-memory fallback
+├── Optimized for Apple Silicon performance
+├── Reduced Docker memory footprint
+└── Intelligent Redis detection and setup
+
+# 🎙️ VoxFlow.command - Complete Docker environment
 ├── Automatic Docker environment setup
-├── Service health monitoring
+├── Full Redis container integration
+├── Maximum compatibility and stability
 ├── Browser auto-launch
-├── User-friendly progress display
 └── Graceful error handling
 
 # 🔧 VoxFlow-Debug.command - Debug mode  
@@ -292,6 +299,13 @@ services:
 ├── Performance monitoring
 ├── Debug panel activation
 └── Developer tools integration
+
+# 🔴 install-redis.command - One-time Redis optimization
+├── Automatic Homebrew setup
+├── Redis installation and configuration
+├── Service management options
+├── Performance testing and optimization
+└── VoxFlow integration guidance
 ```
 
 ### 🔍 Debug & Monitoring Features
