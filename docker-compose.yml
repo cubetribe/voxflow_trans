@@ -1,5 +1,6 @@
-# VoxFlow Production Docker Compose Configuration
-# Optimized for Apple Silicon M4 Max with proper resource management
+# VoxFlow Unified Docker Compose Configuration
+# Single config for all environments - configure via .env file
+# Optimized for Apple Silicon M4 Max with production-ready defaults
 
 # Network definition for service isolation
 networks:
@@ -18,19 +19,19 @@ services:
     networks:
       - voxflow-network
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
       - ./config/redis.conf:/usr/local/etc/redis/redis.conf:ro
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     environment:
-      - REDIS_MAXMEMORY=1gb
-      - REDIS_MAXMEMORY_POLICY=allkeys-lru
+      - REDIS_MAXMEMORY=${REDIS_MAXMEMORY:-1gb}
+      - REDIS_MAXMEMORY_POLICY=${REDIS_MAXMEMORY_POLICY:-allkeys-lru}
     # Resource limits for Apple Silicon optimization
     deploy:
       resources:
         limits:
-          memory: 1.5G
+          memory: ${REDIS_MEMORY_LIMIT:-1.5G}
           cpus: '1.0'
         reservations:
           memory: 512M
@@ -59,32 +60,32 @@ services:
     networks:
       - voxflow-network
     ports:
-      - "8000:8000"
+      - "${PYTHON_SERVICE_PORT:-8000}:8000"
     environment:
       # Core Configuration
       - PORT=8000
       - HOST=0.0.0.0
-      - ENVIRONMENT=production
-      - LOG_LEVEL=info
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
       
       # Voxtral Model Configuration
-      - MODEL_NAME=mistralai/Voxtral-Mini-3B-2507
-      - DEVICE=mps
-      - PRECISION=float16
-      - MAX_AUDIO_LENGTH=1800
-      - CHUNK_SIZE=30
-      - OVERLAP_SIZE=2
+      - MODEL_NAME=${MODEL_NAME:-mistralai/Voxtral-Mini-3B-2507}
+      - DEVICE=${DEVICE:-mps}
+      - PRECISION=${PRECISION:-float16}
+      - MAX_AUDIO_LENGTH=${MAX_AUDIO_LENGTH:-1800}
+      - CHUNK_SIZE=${CHUNK_SIZE:-30}
+      - OVERLAP_SIZE=${OVERLAP_SIZE:-2}
       
       # Performance Settings
-      - BATCH_SIZE=1
-      - MAX_CONCURRENT_REQUESTS=3
-      - MODEL_TIMEOUT=300
-      - INFERENCE_TIMEOUT=120
+      - BATCH_SIZE=${BATCH_SIZE:-1}
+      - MAX_CONCURRENT_REQUESTS=${MAX_CONCURRENT_REQUESTS:-3}
+      - MODEL_TIMEOUT=${MODEL_TIMEOUT:-300}
+      - INFERENCE_TIMEOUT=${INFERENCE_TIMEOUT:-120}
       
       # Redis Configuration
-      - REDIS_URL=redis://redis:6379
-      - ENABLE_CACHE=true
-      - CACHE_TTL=3600
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - ENABLE_CACHE=${ENABLE_CACHE:-true}
+      - CACHE_TTL=${CACHE_TTL:-3600}
       
       # Security
       - PYTHONUNBUFFERED=1
@@ -93,8 +94,8 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      # Development hot-reload (comment out for production)
-      - ./backend/python-service/app:/app/app:ro
+      # Development hot-reload (controlled by environment)
+      - ./backend/python-service/app:/app/app:${HOT_RELOAD_MODE:-ro}
       # Persistent model cache
       - python_models:/app/data/models
       - python_cache:/app/.cache
@@ -104,7 +105,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 8G
+          memory: ${PYTHON_MEMORY_LIMIT:-8G}
           cpus: '4.0'
         reservations:
           memory: 4G
@@ -133,33 +134,33 @@ services:
     networks:
       - voxflow-network
     ports:
-      - "3000:3000"
+      - "${NODE_SERVICE_PORT:-3000}:3000"
     environment:
       # Core Configuration
       - PORT=3000
-      - NODE_ENV=production
-      - LOG_LEVEL=info
+      - NODE_ENV=${NODE_ENV:-production}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
       
       # Service URLs
-      - REDIS_URL=redis://redis:6379
-      - REDIS_OPTIONAL=false
-      - DATABASE_URL=sqlite:./data/voxflow.db
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - REDIS_OPTIONAL=${REDIS_OPTIONAL:-false}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:./data/voxflow.db}
       - PYTHON_SERVICE_URL=http://python-service:8000
       
       # Security
-      - JWT_SECRET=${JWT_SECRET:-$(openssl rand -base64 32)}
-      - SESSION_SECRET=${SESSION_SECRET:-$(openssl rand -base64 32)}
+      - JWT_SECRET=${JWT_SECRET}
+      - SESSION_SECRET=${SESSION_SECRET}
       
       # Performance
-      - MAX_FILE_SIZE=500MB
-      - UPLOAD_TIMEOUT=300
-      - REQUEST_TIMEOUT=30
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-500MB}
+      - UPLOAD_TIMEOUT=${UPLOAD_TIMEOUT:-300}
+      - REQUEST_TIMEOUT=${REQUEST_TIMEOUT:-30}
     depends_on:
       python-service:
         condition: service_healthy
     volumes:
-      # Development hot-reload (comment out for production)
-      - ./backend/node-service/src:/app/src:ro
+      # Development hot-reload (controlled by environment)
+      - ./backend/node-service/src:/app/src:${HOT_RELOAD_MODE:-ro}
       - ./backend/node-service/tsconfig.json:/app/tsconfig.json:ro
       # Persistent data
       - node_data:/app/data
@@ -168,7 +169,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: ${NODE_MEMORY_LIMIT:-2G}
           cpus: '2.0'
         reservations:
           memory: 512M
@@ -196,17 +197,17 @@ services:
     networks:
       - voxflow-network
     ports:
-      - "5173:5173"
+      - "${FRONTEND_PORT:-5173}:5173"
     environment:
       # Vite Configuration
-      - VITE_API_URL=http://localhost:3000
-      - VITE_WS_URL=ws://localhost:3000
-      - VITE_MAX_FILE_SIZE=500
-      - VITE_DEBUG_MODE=false
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:3000}
+      - VITE_WS_URL=${VITE_WS_URL:-ws://localhost:3000}
+      - VITE_MAX_FILE_SIZE=${VITE_MAX_FILE_SIZE:-500}
+      - VITE_DEBUG_MODE=${VITE_DEBUG_MODE:-false}
       
       # Development Settings
-      - NODE_ENV=development
-      - CHOKIDAR_USEPOLLING=true
+      - NODE_ENV=${NODE_ENV:-development}
+      - CHOKIDAR_USEPOLLING=${CHOKIDAR_USEPOLLING:-true}
     depends_on:
       node-service:
         condition: service_healthy
@@ -223,7 +224,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: ${FRONTEND_MEMORY_LIMIT:-1G}
           cpus: '1.0'
         reservations:
           memory: 256M

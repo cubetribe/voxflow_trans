@@ -1,259 +1,181 @@
-# 🐳 Docker Setup für VoxFlow
+# 🐳 VoxFlow Docker Setup - Vereinfacht nach DEVELOPMENT_RULES.md
 
-Diese Anleitung zeigt, wie Sie VoxFlow in einer vollständig virtualisierten Umgebung mit Docker ausführen können.
+## 📁 PROJEKT-STRUKTUR REGEL COMPLIANCE
+
+✅ **NUR EINE docker-compose.yml** für alle Environments  
+✅ **Environment-spezifische Configs** über .env Datei  
+✅ **YAGNI Prinzip**: Ein funktionierendes Setup > drei nicht-funktionierende  
+✅ **M4 Max Local Development** ohne Multi-Environment Complexity
 
 ## 🚀 Quick Start
 
-### 1. Repository klonen
+### 1. Environment Setup
 ```bash
-git clone https://github.com/cubetribe/voxflow_trans.git
-cd voxflow_trans
+# Copy and configure environment
+cp .env.example .env
+
+# Generate security secrets
+echo "JWT_SECRET=$(openssl rand -base64 32)" >> .env
+echo "SESSION_SECRET=$(openssl rand -base64 32)" >> .env
 ```
 
-### 2. Environment Dateien erstellen
+### 2. Development Mode
 ```bash
-# Frontend
-cp frontend/.env.example frontend/.env.local
+# Start all services in development mode
+docker-compose up -d
 
-# Node.js Service
-cp backend/node-service/.env.example backend/node-service/.env
-
-# Python Service
-cp backend/python-service/.env.example backend/python-service/.env
-```
-
-### 3. Alle Services starten
-```bash
-docker-compose up --build
-```
-
-### 4. Anwendung öffnen
-- Frontend: http://localhost:5173
-- API Gateway: http://localhost:3000
-- Python Service: http://localhost:8000
-- Redis: localhost:6379
-
-## 📋 Services Übersicht
-
-### Frontend (React + Vite)
-- **Port**: 5173
-- **Container**: `voxflow-frontend`
-- **Hot Reload**: ✅ Aktiviert
-- **Volume Mount**: `./frontend:/app`
-
-### Node.js API Gateway
-- **Port**: 3000  
-- **Container**: `voxflow-node-service`
-- **TypeScript**: ✅ Aktiviert
-- **Hot Reload**: ✅ Aktiviert mit nodemon
-- **Volume Mount**: `./backend/node-service:/app`
-
-### Python Voxtral Service
-- **Port**: 8000
-- **Container**: `voxflow-python-service`
-- **FastAPI**: ✅ Auto-reload aktiviert
-- **MLX**: ✅ Apple Silicon Support
-- **Volume Mount**: `./backend/python-service:/app`
-
-### Redis Cache
-- **Port**: 6379
-- **Container**: `voxflow-redis`
-- **Persistent Data**: ✅ Volume gemountet
-
-## 🛠️ Entwicklung
-
-### Logs anzeigen
-```bash
-# Alle Services
+# Watch logs
 docker-compose logs -f
 
-# Einzelner Service
-docker-compose logs -f frontend
-docker-compose logs -f node-service
+# Access services
+# Frontend:      http://localhost:5173
+# Node.js API:   http://localhost:3000  
+# Python API:    http://localhost:8000
+# Redis:         localhost:6379
+```
+
+### 3. Production Mode
+```bash
+# Edit .env for production
+NODE_ENV=production
+ENVIRONMENT=production
+DEBUG_MODE=false
+HOT_RELOAD=false
+LOG_LEVEL=warn
+
+# Start production
+docker-compose up -d
+```
+
+## ⚙️ Environment Configuration
+
+### 🔧 Development (.env)
+```env
+NODE_ENV=development
+DEBUG_MODE=true
+HOT_RELOAD_MODE=rw
+LOG_LEVEL=debug
+VITE_DEBUG_MODE=true
+```
+
+### 🚀 Production (.env)
+```env
+NODE_ENV=production
+DEBUG_MODE=false
+HOT_RELOAD_MODE=ro
+LOG_LEVEL=warn
+VITE_DEBUG_MODE=false
+```
+
+## 🏗️ Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   Node.js       │    │   Python        │
+│   React + Vite  │◄──►│   API Gateway   │◄──►│   Voxtral AI    │
+│   Port: 5173    │    │   Port: 3000    │    │   Port: 8000    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                              │
+                       ┌─────────────────┐
+                       │     Redis       │
+                       │   Cache + Jobs  │
+                       │   Port: 6379    │
+                       └─────────────────┘
+```
+
+## 📊 Resource Allocation (Apple Silicon M4 Max)
+
+| Service | Memory Limit | CPU Limit | Purpose |
+|---------|-------------|-----------|---------|
+| Redis | 1.5GB | 1.0 | Cache + Job Queue |
+| Python | 8GB | 4.0 | AI Model + Processing |
+| Node.js | 2GB | 2.0 | API Gateway + WebSocket |
+| Frontend | 1GB | 1.0 | React Development |
+
+## 🔄 Common Commands
+
+```bash
+# Start services
+docker-compose up -d
+
+# Restart specific service
+docker-compose restart python-service
+
+# View logs
 docker-compose logs -f python-service
-```
 
-### Services neu starten
-```bash
-# Alle Services
-docker-compose restart
+# Enter container
+docker-compose exec python-service bash
 
-# Einzelner Service
-docker-compose restart frontend
-```
-
-### In Container ausführen
-```bash
-# Frontend (npm Befehle)
-docker-compose exec frontend npm install
-docker-compose exec frontend npm run lint
-
-# Node.js Service
-docker-compose exec node-service npm test
-docker-compose exec node-service npm run type-check
-
-# Python Service
-docker-compose exec python-service pytest
-docker-compose exec python-service black .
-```
-
-### Services stoppen
-```bash
-# Graceful stop
+# Stop all
 docker-compose down
 
-# Mit Volume cleanup
-docker-compose down -v
-
-# Mit Image cleanup
-docker-compose down --rmi all
+# Clean rebuild
+docker-compose down -v && docker-compose build --no-cache && docker-compose up -d
 ```
-
-## 🔧 Konfiguration
-
-### Environment Variablen
-
-#### Frontend (.env.local)
-```env
-VITE_API_URL=http://localhost:3000
-VITE_WS_URL=ws://localhost:3000
-VITE_MAX_FILE_SIZE=500
-VITE_CHUNK_SIZE=32
-```
-
-#### Node.js Service (.env)
-```env
-PORT=3000
-REDIS_URL=redis://redis:6379
-DATABASE_URL=sqlite:./data/voxflow.db
-PYTHON_SERVICE_URL=http://python-service:8000
-JWT_SECRET=your-secret-key
-NODE_ENV=development
-```
-
-#### Python Service (.env)
-```env
-PORT=8000
-MODEL_NAME=mistralai/Voxtral-Mini-3B-2507
-DEVICE=mps
-MAX_AUDIO_LENGTH=1800
-CHUNK_SIZE=30
-REDIS_URL=redis://redis:6379
-ENVIRONMENT=development
-```
-
-## 📊 Health Checks
-
-Alle Services haben Health Checks konfiguriert:
-
-```bash
-# Service Status prüfen
-docker-compose ps
-
-# Health Status
-curl http://localhost:3000/health     # Node.js API
-curl http://localhost:8000/health     # Python Service
-curl http://localhost:5173            # Frontend
-```
-
-## 🗃️ Daten-Volumes
-
-### Persistent Volumes
-- `redis_data`: Redis Daten
-- `python_cache`: Python Model Cache  
-- `node_data`: Node.js SQLite Database
-
-### Development Volumes (Bind Mounts)
-- `./frontend:/app` - Frontend Source Code
-- `./backend/node-service:/app` - Node.js Source Code
-- `./backend/python-service:/app` - Python Source Code
 
 ## 🐛 Troubleshooting
 
-### Port bereits belegt
+### Model Loading Issues
 ```bash
-# Ports prüfen
-lsof -i :5173  # Frontend
-lsof -i :3000  # Node.js
-lsof -i :8000  # Python
-lsof -i :6379  # Redis
+# Check Python service logs
+docker-compose logs python-service
 
-# Andere Docker Container stoppen
-docker stop $(docker ps -q)
+# Restart Python service
+docker-compose restart python-service
 ```
 
-### Container neu builden
+### Memory Issues
 ```bash
-# Einzelner Service
-docker-compose build frontend --no-cache
+# Check container stats
+docker stats
 
-# Alle Services
-docker-compose build --no-cache
+# Adjust memory limits in .env
+PYTHON_MEMORY_LIMIT=12G
 ```
 
-### Dependencies aktualisieren
+### Port Conflicts
 ```bash
-# Frontend
-docker-compose exec frontend npm install
-
-# Node.js
-docker-compose exec node-service npm install
-
-# Python
-docker-compose exec python-service pip install -r requirements.txt
+# Change ports in .env
+FRONTEND_PORT=3001
+NODE_SERVICE_PORT=3002
+PYTHON_SERVICE_PORT=8001
+REDIS_PORT=6380
 ```
 
-### Logs debuggen
-```bash
-# Fehler in Echtzeit verfolgen
-docker-compose logs -f --tail=100
+## 🔐 Security Notes
 
-# Bestimmte Service Logs
-docker-compose logs python-service | grep ERROR
-```
+- **Secrets**: Always generate unique JWT_SECRET and SESSION_SECRET
+- **Production**: Disable debug modes and hot-reload
+- **Firewall**: Only expose necessary ports in production
+- **Updates**: Regularly update base images
 
-## 🚀 Produktion
+## ✅ Health Checks
 
-Für Produktion verwenden Sie:
+All services include comprehensive health checks:
+- **Redis**: `redis-cli ping`
+- **Python**: `GET /health` (extended timeout for model loading)
+- **Node.js**: `GET /health`
+- **Frontend**: `GET /` (Vite dev server)
 
-```bash
-# Production Build
-docker-compose -f docker-compose.prod.yml up --build -d
+## 📝 Environment Variables Reference
 
-# Mit SSL/TLS
-docker-compose -f docker-compose.prod.yml -f docker-compose.ssl.yml up -d
-```
+See `.env.example` for complete list of configurable variables.
 
-## 📱 Mobile Development
+**Key Variables:**
+- `NODE_ENV`: development/production
+- `DEBUG_MODE`: true/false
+- `HOT_RELOAD_MODE`: rw/ro (development/production)
+- `DEVICE`: mps/cuda/cpu (AI processing device)
+- `MODEL_NAME`: Voxtral model variant
+- Memory limits: `*_MEMORY_LIMIT` variables
 
-Für Mobile Testing (z.B. Handy im gleichen Netzwerk):
+---
 
-1. Finden Sie Ihre lokale IP:
-   ```bash
-   ifconfig | grep "inet " | grep -v 127.0.0.1
-   ```
+## 🎯 DEVELOPMENT_RULES.md Compliance ✅
 
-2. Update Frontend .env.local:
-   ```env
-   VITE_API_URL=http://192.168.1.100:3000
-   VITE_WS_URL=ws://192.168.1.100:3000
-   ```
-
-3. Service neu starten:
-   ```bash
-   docker-compose restart frontend
-   ```
-
-## 🔒 Sicherheit
-
-### Entwicklung
-- Services sind nur lokal erreichbar
-- Keine Produktions-Secrets in .env Dateien
-- Volume Mounts nur für Development Code
-
-### Wichtige Hinweise
-- ⚠️ Niemals echte Secrets in Repository committen
-- ⚠️ .env Dateien sind in .gitignore
-- ⚠️ Production Setup benötigt separate Konfiguration
-
-Diese Docker-Umgebung isoliert VoxFlow vollständig von Ihrem System und ermöglicht einfache Entwicklung und Testing.
+✅ **Single docker-compose.yml** - Keine separaten Varianten  
+✅ **Environment-driven** - Alles über .env konfigurierbar  
+✅ **Production-ready** - Vollständige Services ohne Shortcuts  
+✅ **Apple Silicon optimized** - M4 Max Resource Management  
+✅ **YAGNI Prinzip** - Weniger Komplexität, mehr Funktionalität

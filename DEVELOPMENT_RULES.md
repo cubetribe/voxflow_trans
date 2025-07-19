@@ -98,3 +98,23 @@ Wenn ich gegen diese Regeln verstoße:
 4. **Neu implementieren** - vollständig und richtig
 
 Diese Regeln sind UNVERÄNDERLICH und NICHT VERHANDELBAR!
+
+---
+
+## 📁 PROJEKT-STRUKTUR REGEL
+
+### Docker Setup Vereinfachung
+
+**PFLICHT:**
+- **NUR EINE docker-compose.yml** für lokale Entwicklung
+- **Keine separaten debug/local/prod Varianten** (YAGNI - You Ain't Gonna Need It)
+- **Environment-spezifische Configs** über .env Datei
+- **Später bei Bedarf erweitern**
+
+**Begründung:**
+- Weniger Komplexität = weniger Fehlerquellen
+- Ein funktionierendes Setup > drei nicht-funktionierende
+- M4 Max Local Development braucht keine Multi-Environment Complexity
+
+**Aktion:**
+Konsolidiere die Docker-Configs zu einer einzigen, aber VOLLSTÄNDIGEN docker-compose.yml
