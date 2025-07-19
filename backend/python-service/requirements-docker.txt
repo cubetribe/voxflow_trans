@@ -1,11 +1,11 @@
 # Docker-specific requirements (without MLX for Linux containers)
 # Use this file for Docker builds
 
-# Core Framework
+# Core Framework - Updated for mistral-common compatibility
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
-pydantic==2.5.2
-pydantic-settings==2.1.0
+pydantic>=2.7.0,<3.0
+pydantic-settings>=2.1.0
 
 # Audio Processing
 librosa==0.10.1
@@ -13,13 +13,14 @@ soundfile==0.12.1
 webrtcvad==2.0.10
 pydub==0.25.1
 ffmpeg-python==0.2.0
-numpy==1.24.4
+numpy>=1.25.0,<1.28.0
 scipy==1.11.4
 
-# ML and Voxtral (without MLX - not available in Linux containers)
+# ML and Voxtral with Transformers (Production-Ready & Stable)
+mistral-common[audio]==1.8.0
 torch==2.1.2
 torchaudio==2.1.2
-transformers==4.36.2
+git+https://github.com/huggingface/transformers.git
 accelerate==0.25.0
 optimum==1.16.1
 

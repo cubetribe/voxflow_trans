@@ -99,12 +99,10 @@ ENTRYPOINT ["/usr/bin/tini", "--"]
 
 # Start the application with production settings
 # --workers 1: Single worker for model consistency
-# --worker-class: Async worker for better performance
-# --access-logfile: Structured logging
+# --access-log: Enable access logging
 CMD ["uvicorn", "app.main:app", \
      "--host", "0.0.0.0", \
      "--port", "8000", \
      "--workers", "1", \
-     "--worker-class", "uvicorn.workers.UvicornWorker", \
      "--access-log", \
      "--log-level", "info"]

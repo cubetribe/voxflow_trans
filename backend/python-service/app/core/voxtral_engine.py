@@ -123,7 +123,7 @@ class VoxtralEngine:
             
             start_time = time.time()
             
-            # Use production model loader
+            # Use production model loader (Transformers-based for stability)
             model_loader = ProductionModelLoader(self.settings.model_cache_path)
             loading_result: LoadingResult = await model_loader.load_model(self.settings.MODEL_NAME)
             

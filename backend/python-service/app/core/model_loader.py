@@ -29,6 +29,15 @@ from transformers import (
     pipeline, Pipeline, TrainingArguments
 )
 
+# Voxtral-specific imports with fallback
+try:
+    from transformers import VoxtralForConditionalGeneration
+    VOXTRAL_AVAILABLE = True
+    logger.info("✅ VoxtralForConditionalGeneration available")
+except ImportError:
+    VOXTRAL_AVAILABLE = False
+    logger.warning("⚠️ VoxtralForConditionalGeneration not available - using AutoModel fallback")
+
 # Accelerate imports with fallback
 try:
     from accelerate import Accelerator
@@ -341,12 +350,20 @@ class StandardModelLoader(BaseModelLoader):
             
             # Load model with correct class for Voxtral
             if self.model_info.model_type == ModelType.VOXTRAL:
-                # Voxtral uses AutoModel, not AutoModelForSpeechSeq2Seq
-                model = await asyncio.to_thread(
-                    AutoModel.from_pretrained,
-                    self.model_info.model_name,
-                    **model_kwargs
-                )
+                # Use VoxtralForConditionalGeneration for Voxtral models
+                if VOXTRAL_AVAILABLE:
+                    model = await asyncio.to_thread(
+                        VoxtralForConditionalGeneration.from_pretrained,
+                        self.model_info.model_name,
+                        **model_kwargs
+                    )
+                else:
+                    # Fallback to AutoModel if VoxtralForConditionalGeneration not available
+                    model = await asyncio.to_thread(
+                        AutoModel.from_pretrained,
+                        self.model_info.model_name,
+                        **model_kwargs
+                    )
             else:
                 # Other speech models use AutoModelForSpeechSeq2Seq
                 model = await asyncio.to_thread(

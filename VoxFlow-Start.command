@@ -165,8 +165,77 @@ if [ ! -f "docker-compose.yml" ]; then
     exit 1
 fi
 
-# Build and start all services
-docker-compose up --build -d
+# Erweiterte Build-Logik - Requirements-Änderungen erkennen
+echo "🔍 Prüfe ob Images neu gebaut werden müssen..."
+
+# Check 1: Existieren Images überhaupt?
+if ! docker images | grep -q "voxflow_traskriber"; then
+    echo "🏗️ Erste Installation - Building alle Images..."
+    docker-compose build --no-cache
+    
+# Check 2: Dependencies geändert? (requirements-docker.txt neuer als Image)
+elif [ "backend/python-service/requirements-docker.txt" -nt "$(docker images --format "table {{.CreatedAt}}" voxflow_traskriber-python-service | tail -n +2 | head -1)" ] 2>/dev/null; then
+    echo "📦 Requirements geändert - Rebuilding Python Service..."
+    docker-compose build --no-cache python-service
+    
+# Check 3: Dockerfile geändert?
+elif [ "backend/python-service/Dockerfile" -nt "$(docker images --format "table {{.CreatedAt}}" voxflow_traskriber-python-service | tail -n +2 | head -1)" ] 2>/dev/null; then
+    echo "🐳 Dockerfile geändert - Rebuilding Python Service..."
+    docker-compose build --no-cache python-service
+    
+else
+    echo "✅ Images sind aktuell - kein Build erforderlich"
+fi
+
+# Stoppe alte Container falls vorhanden
+echo "🛑 Stoppe laufende Container..."
+docker-compose down 2>/dev/null || true
+
+# Starte Services
+echo "🚀 Starte VoxFlow Services..."
+docker-compose up -d
+
+# ERWEITERTE PYTHON SERVICE DEBUG INFO
+echo ""
+echo "🔍 Checking Python Service Status..."
+sleep 5
+
+# Container Status
+echo ""
+echo "📋 Container Status:"
+docker-compose ps python-service
+
+# Die letzten 50 Logs
+echo ""
+echo "📋 Python Service Logs (Last 50 lines):"
+docker-compose logs python-service --tail=50
+
+# Speziell nach Errors suchen
+echo ""
+echo "❌ Error Details:"
+docker-compose logs python-service --tail=100 | grep -E "ERROR|KeyError|Failed|Exception|Traceback" || echo "No specific errors found"
+
+# Health Check Detail
+echo ""
+echo "🏥 Health Check Details:"
+docker inspect $(docker-compose ps -q python-service) --format='{{json .State.Health}}' 2>/dev/null | jq '.' 2>/dev/null || echo "No health check info available"
+
+# Container Resource Usage
+echo ""
+echo "📊 Container Resource Usage:"
+docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}" | grep python-service || echo "No stats available"
+
+# Network Connectivity Test
+echo ""
+echo "🌐 Network Connectivity Test:"
+docker exec $(docker-compose ps -q python-service) curl -f http://localhost:8000/health 2>/dev/null && echo "✅ Internal health check OK" || echo "❌ Internal health check FAILED"
+
+# Environment Variables Check
+if [[ $DEBUG_ENABLED == true ]]; then
+    echo ""
+    echo "🔧 Environment Variables:"
+    docker exec $(docker-compose ps -q python-service) env | grep -E "MODEL_NAME|DEVICE|PORT|REDIS_URL" || echo "No relevant env vars found"
+fi
 
 echo ""
 echo "⏳ Waiting for services to become healthy..."
@@ -282,6 +351,13 @@ echo "   ✅ Volume mounts for live code editing"
 echo "   ✅ Health checks for service monitoring"
 echo "   ✅ Automatic cleanup and restart on failures"
 echo ""
+
+# Optional: Pausiere vor Browser-Öffnung im Debug-Modus
+if [[ $DEBUG_ENABLED == true ]]; then
+    echo ""
+    echo "⏸️  Debug Mode: Press Enter to continue to browser..."
+    read
+fi
 
 # Browser automatisch öffnen
 echo "🌐 Browser wird geöffnet..."
