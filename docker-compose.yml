@@ -1,88 +1,270 @@
-version: '3.8'
+# VoxFlow Production Docker Compose Configuration
+# Optimized for Apple Silicon M4 Max with proper resource management
+
+# Network definition for service isolation
+networks:
+  voxflow-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
 
 services:
-  # Redis for caching and job queues
+  # Redis - Cache and Job Queue
   redis:
     image: redis:7-alpine
+    container_name: voxflow-redis
+    hostname: redis
+    networks:
+      - voxflow-network
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    environment:
+      - REDIS_MAXMEMORY=1gb
+      - REDIS_MAXMEMORY_POLICY=allkeys-lru
+    # Resource limits for Apple Silicon optimization
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # Python Voxtral Service
+  # Python Voxtral Service - AI Processing Engine
   python-service:
-    build: ./backend/python-service
+    build:
+      context: ./backend/python-service
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: voxflow-python
+    hostname: python-service
+    networks:
+      - voxflow-network
     ports:
       - "8000:8000"
     environment:
+      # Core Configuration
       - PORT=8000
+      - HOST=0.0.0.0
+      - ENVIRONMENT=production
+      - LOG_LEVEL=info
+      
+      # Voxtral Model Configuration
       - MODEL_NAME=mistralai/Voxtral-Mini-3B-2507
       - DEVICE=mps
+      - PRECISION=float16
       - MAX_AUDIO_LENGTH=1800
       - CHUNK_SIZE=30
+      - OVERLAP_SIZE=2
+      
+      # Performance Settings
+      - BATCH_SIZE=1
+      - MAX_CONCURRENT_REQUESTS=3
+      - MODEL_TIMEOUT=300
+      - INFERENCE_TIMEOUT=120
+      
+      # Redis Configuration
       - REDIS_URL=redis://redis:6379
+      - ENABLE_CACHE=true
+      - CACHE_TTL=3600
+      
+      # Security
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
     depends_on:
       redis:
         condition: service_healthy
     volumes:
-      - ./backend/python-service:/app
-      - python_cache:/root/.cache
+      # Development hot-reload (comment out for production)
+      - ./backend/python-service/app:/app/app:ro
+      # Persistent model cache
+      - python_models:/app/data/models
+      - python_cache:/app/.cache
+      - python_temp:/app/data/temp
+      - python_logs:/app/data/logs
+    # Apple Silicon optimized resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+          cpus: '4.0'
+        reservations:
+          memory: 4G
+          cpus: '2.0'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
-      timeout: 10s
-      retries: 3
+      timeout: 15s
+      retries: 5
+      start_period: 120s  # Extended for model loading
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
 
-  # Node.js API Gateway
+  # Node.js API Gateway - Request Routing & WebSocket
   node-service:
-    build: ./backend/node-service
+    build:
+      context: ./backend/node-service
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: voxflow-node
+    hostname: node-service
+    networks:
+      - voxflow-network
     ports:
       - "3000:3000"
     environment:
+      # Core Configuration
       - PORT=3000
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+      
+      # Service URLs
       - REDIS_URL=redis://redis:6379
+      - REDIS_OPTIONAL=false
       - DATABASE_URL=sqlite:./data/voxflow.db
       - PYTHON_SERVICE_URL=http://python-service:8000
-      - JWT_SECRET=your-secret-key
+      
+      # Security
+      - JWT_SECRET=${JWT_SECRET:-$(openssl rand -base64 32)}
+      - SESSION_SECRET=${SESSION_SECRET:-$(openssl rand -base64 32)}
+      
+      # Performance
+      - MAX_FILE_SIZE=500MB
+      - UPLOAD_TIMEOUT=300
+      - REQUEST_TIMEOUT=30
     depends_on:
       python-service:
         condition: service_healthy
     volumes:
-      - ./backend/node-service:/app
+      # Development hot-reload (comment out for production)
+      - ./backend/node-service/src:/app/src:ro
+      - ./backend/node-service/tsconfig.json:/app/tsconfig.json:ro
+      # Persistent data
       - node_data:/app/data
+      - node_logs:/app/logs
+      - node_temp:/app/temp
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
 
-  # Frontend React Application
+  # React Frontend - User Interface
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: voxflow-frontend
+    hostname: frontend
+    networks:
+      - voxflow-network
     ports:
       - "5173:5173"
     environment:
+      # Vite Configuration
       - VITE_API_URL=http://localhost:3000
       - VITE_WS_URL=ws://localhost:3000
       - VITE_MAX_FILE_SIZE=500
+      - VITE_DEBUG_MODE=false
+      
+      # Development Settings
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
     depends_on:
       node-service:
         condition: service_healthy
     volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      # Development hot-reload
+      - ./frontend/src:/app/src:ro
+      - ./frontend/public:/app/public:ro
+      - ./frontend/index.html:/app/index.html:ro
+      - ./frontend/vite.config.ts:/app/vite.config.ts:ro
+      - ./frontend/tailwind.config.js:/app/tailwind.config.js:ro
+      - ./frontend/postcss.config.js:/app/postcss.config.js:ro
+      # Node modules volume for performance
+      - frontend_node_modules:/app/node_modules
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5173"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
+# Named volumes for data persistence
 volumes:
+  # Redis data
   redis_data:
+    driver: local
+    
+  # Python service volumes
+  python_models:
+    driver: local
   python_cache:
+    driver: local
+  python_temp:
+    driver: local
+  python_logs:
+    driver: local
+    
+  # Node.js service volumes
   node_data:
+    driver: local
+  node_logs:
+    driver: local
+  node_temp:
+    driver: local
+    
+  # Frontend volumes
+  frontend_node_modules:
+    driver: local

@@ -15,10 +15,18 @@ export async function connectRedis(): Promise<void> {
   }
 
   try {
-    redisClient = createClient({
+    const clientConfig: {
+      url: string;
+      password?: string;
+    } = {
       url: config.redis.url,
-      password: config.redis.password,
-    });
+    };
+    
+    if (config.redis.password) {
+      clientConfig.password = config.redis.password;
+    }
+    
+    redisClient = createClient(clientConfig);
 
     redisClient.on('error', (error: any) => {
       if (redisOptional) {
@@ -113,9 +121,14 @@ export async function redisDel(key: string): Promise<void> {
 }
 
 export function getRedisStatus(): { connected: boolean; mode: string; cacheSize?: number } {
-  return {
+  const status: { connected: boolean; mode: string; cacheSize?: number } = {
     connected: isRedisConnected,
     mode: isRedisConnected ? 'redis' : 'in-memory',
-    cacheSize: isRedisConnected ? undefined : fallbackCache.size,
   };
+  
+  if (!isRedisConnected) {
+    status.cacheSize = fallbackCache.size;
+  }
+  
+  return status;
 }

@@ -2,6 +2,25 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🚫 PROJEKT-REGELN - ABSOLUT VERPFLICHTEND
+
+### VERBOTEN (Keine Ausnahmen):
+1. Minimal Working Systems / MVP First
+2. Quick-Fixes oder "erstmal zum Laufen bringen"
+3. Mock-Daten oder Stub-Services
+4. Vereinfachungen oder Feature-Reduktion
+
+### PFLICHT (Immer einhalten):
+1. Production-Ready Code von Anfang an
+2. Vollständige Implementierungen
+3. Comprehensive Error Handling
+4. Best Practices ohne Kompromisse
+
+### BEI JEDER ENTSCHEIDUNG:
+- Referenziere diese Regeln
+- Begründe warum die Lösung production-ready ist
+- Keine Shortcuts!
+
 ## Project Overview
 
 VoxFlow is a voice transcription application using Voxtral (Mistral's speech-to-text model) with a dual-service architecture:

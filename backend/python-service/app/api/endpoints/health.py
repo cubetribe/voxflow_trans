@@ -1,27 +1,72 @@
 """
-Health check endpoints for monitoring service status.
+VoxFlow Health Check Endpoints - Production-Ready Implementation
+Comprehensive health monitoring with detailed system metrics and model status.
 """
 
-from fastapi import APIRouter, Request
-from loguru import logger
+import asyncio
 import psutil
 import time
-from typing import Dict, Any
+from pathlib import Path
+from typing import Dict, Any, Optional
+
+from fastapi import APIRouter, Request, HTTPException
+from loguru import logger
+from pydantic import BaseModel
 
 from app.core.config import settings
 
 router = APIRouter()
 
 
+class HealthStatus(BaseModel):
+    """Health status response model."""
+    status: str
+    timestamp: float
+    uptime: float
+    version: str = "1.0.0"
+
+
+class DetailedHealthStatus(BaseModel):
+    """Detailed health status with comprehensive metrics."""
+    status: str
+    timestamp: float
+    uptime: float
+    version: str = "1.0.0"
+    model: Dict[str, Any]
+    system: Dict[str, Any]
+    performance: Dict[str, Any]
+    dependencies: Dict[str, Any]
+
+
+# Track service start time for uptime calculation
+SERVICE_START_TIME = time.time()
+
+
 @router.get("/")
-async def health_check() -> Dict[str, Any]:
-    """Basic health check endpoint."""
-    return {
-        "status": "healthy",
-        "timestamp": time.time(),
-        "service": "voxflow-python-service",
-        "version": "1.0.0",
-    }
+async def health_check() -> HealthStatus:
+    """
+    Basic health check endpoint.
+    
+    Returns simple status for quick health verification.
+    Suitable for load balancer health checks.
+    """
+    
+    try:
+        uptime = time.time() - SERVICE_START_TIME
+        
+        return HealthStatus(
+            status="healthy",
+            timestamp=time.time(),
+            uptime=uptime,
+        )
+        
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return HealthStatus(
+            status="unhealthy",
+            timestamp=time.time(),
+            uptime=time.time() - SERVICE_START_TIME,
+        )
 
 
 @router.get("/detailed")

@@ -27,10 +27,11 @@ export class AudioService {
 
   /**
    * Handle large file upload with streaming
+   * Overloaded method to support both Multer files and Buffer input
    */
   async handleFileUpload(
-    fileBuffer: Buffer,
-    filename: string,
+    input: Express.Multer.File | Buffer,
+    filename?: string,
     options: {
       chunkSize?: number;
       cleanup?: boolean;
@@ -40,11 +41,30 @@ export class AudioService {
     const fileId = this.generateFileId();
     const { chunkSize = 10 * 1024 * 1024, cleanup = true } = options; // 10MB chunks
 
+    // Handle different input types
+    let fileBuffer: Buffer;
+    let actualFilename: string;
+    let fileSize: number;
+    
+    if (Buffer.isBuffer(input)) {
+      if (!filename) {
+        throw new Error('Filename is required when input is Buffer');
+      }
+      fileBuffer = input;
+      actualFilename = filename;
+      fileSize = input.length;
+    } else {
+      // Express.Multer.File
+      fileBuffer = await fs.readFile(input.path);
+      actualFilename = input.originalname;
+      fileSize = input.size;
+    }
+
     try {
       // Create temporary file for the upload
       const tempFile = await cleanupService.createTempFile({
         prefix: 'upload-',
-        suffix: path.extname(filename),
+        suffix: path.extname(actualFilename),
         cleanupDelayMs: cleanup ? 3600000 : 0, // 1 hour if cleanup enabled
       });
 
@@ -52,12 +72,12 @@ export class AudioService {
       await this.writeFileInChunks(fileBuffer, tempFile.path, chunkSize);
 
       // Get audio information from Python service
-      const audioInfo = await this.getAudioInfo(tempFile.path, filename);
+      const audioInfo = await this.getAudioInfo(tempFile.path, actualFilename);
 
       const result: FileUploadResult = {
         fileId,
-        filename,
-        fileSize: fileBuffer.length,
+        filename: actualFilename,
+        fileSize,
         tempPath: tempFile.path,
         audioInfo,
       };
@@ -80,7 +100,7 @@ export class AudioService {
    */
   async startBatchTranscription(
     fileIds: string[],
-    config: BatchUploadConfig
+    batchConfig: BatchUploadConfig
   ): Promise<{
     batchId: string;
     message: string;
@@ -100,11 +120,11 @@ export class AudioService {
       // Prepare batch request for Python service
       const batchRequest = {
         files: fileIds,
-        output_directory: config.outputDirectory,
-        format: config.format,
-        include_timestamps: config.includeTimestamps,
-        include_confidence: config.includeConfidence,
-        cleanup_after_processing: config.cleanupAfterProcessing,
+        output_directory: batchConfig.outputDirectory,
+        format: batchConfig.format,
+        include_timestamps: batchConfig.includeTimestamps,
+        include_confidence: batchConfig.includeConfidence,
+        cleanup_after_processing: batchConfig.cleanupAfterProcessing,
         processing_config: {
           chunk_duration_minutes: 10,
           overlap_seconds: 10,
@@ -277,12 +297,6 @@ export class AudioService {
     }
   }
 
-  /**
-   * Get file information without processing
-   */
-  async getFileInfo(fileId: string): Promise<FileUploadResult | null> {
-    return this.uploadedFiles.get(fileId) || null;
-  }
 
   /**
    * List all uploaded files
@@ -412,13 +426,57 @@ export class AudioService {
     const files = Array.from(this.uploadedFiles.values());
     const totalSize = files.reduce((sum, file) => sum + file.fileSize, 0);
     
-    return {
+    const result: {
+      uploadedFiles: number;
+      totalSize: number;
+      oldestFile?: Date;
+    } = {
       uploadedFiles: files.length,
       totalSize,
-      oldestFile: files.length > 0 ? new Date(Math.min(...files.map(f => 
-        parseInt(f.fileId.split('_')[1])
-      ))) : undefined,
     };
+    
+    if (files.length > 0) {
+      const timestamps = files
+        .map(f => f.fileId.split('_')[1])
+        .filter((timestamp): timestamp is string => timestamp !== undefined && !isNaN(parseInt(timestamp)))
+        .map(timestamp => parseInt(timestamp));
+        
+      if (timestamps.length > 0) {
+        result.oldestFile = new Date(Math.min(...timestamps));
+      }
+    }
+    
+    return result;
+  }
+
+  /**
+   * Delete uploaded file and cleanup resources
+   */
+  async deleteFile(fileId: string): Promise<void> {
+    const file = this.uploadedFiles.get(fileId);
+    if (!file) {
+      throw new Error(`File not found: ${fileId}`);
+    }
+
+    try {
+      // Clean up temporary file
+      await cleanupService.cleanupPath(file.tempPath);
+      
+      // Remove from uploaded files map
+      this.uploadedFiles.delete(fileId);
+      
+      logger.info(`File deleted successfully: ${fileId}`);
+    } catch (error) {
+      logger.error(`Failed to delete file ${fileId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get file information by ID
+   */
+  getFileInfo(fileId: string): FileUploadResult | undefined {
+    return this.uploadedFiles.get(fileId);
   }
 }
 

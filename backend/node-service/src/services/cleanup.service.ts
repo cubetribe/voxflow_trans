@@ -1,4 +1,5 @@
 import fs from 'fs/promises';
+import { close } from 'fs';
 import path from 'path';
 import tmp from 'tmp';
 import { logger } from '@/utils/logger';
@@ -117,7 +118,7 @@ export class CleanupService {
         }
 
         // Close the file descriptor immediately
-        fs.close(fd).catch(() => {});
+        close(fd, () => {});
 
         const customCleanup = async () => {
           this.cancelCleanup(path);

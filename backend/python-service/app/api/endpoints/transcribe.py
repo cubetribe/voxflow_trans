@@ -320,8 +320,8 @@ async def cancel_job(
 @router.get("/info/{filename}")
 async def get_file_info(
     filename: str,
-    file: UploadFile = File(...),
     request: Request,
+    file: UploadFile = File(...),
 ) -> FileInfo:
     """Get information about an uploaded audio file without processing."""
     
