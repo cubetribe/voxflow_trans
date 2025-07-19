@@ -49,11 +49,12 @@ backend/node-service/
 │   │   ├── 📄 rate-limit.middleware.ts   # Rate limiting
 │   │   └── 📄 logging.middleware.ts      # Request logging
 │   ├── 📁 services/               # Business logic
-│   │   ├── 📄 audio.service.ts           # Audio processing
+│   │   ├── 📄 audio.service.ts           # Audio processing with large file support
 │   │   ├── 📄 transcription.service.ts   # Transcription logic
 │   │   ├── 📄 queue.service.ts           # Job queue management
 │   │   ├── 📄 storage.service.ts         # File storage
 │   │   ├── 📄 cache.service.ts           # Redis caching
+│   │   ├── 📄 cleanup.service.ts         # Automatic file cleanup
 │   │   ├── 📄 notification.service.ts    # WebSocket notifications
 │   │   └── 📄 python-client.service.ts   # Python service client
 │   ├── 📁 models/                 # Data models
@@ -117,15 +118,16 @@ backend/python-service/
 │   │   ├── 📄 dependencies.py          # Dependency injection
 │   │   └── 📁 endpoints/
 │   │       ├── 📄 __init__.py
-│   │       ├── 📄 transcribe.py        # Transcription endpoints
+│   │       ├── 📄 transcribe.py        # Transcription endpoints with batch support
 │   │       ├── 📄 health.py            # Health check endpoints
 │   │       ├── 📄 models.py            # Model management endpoints
-│   │       └── 📄 streaming.py         # Streaming endpoints
+│   │       ├── 📄 streaming.py         # Streaming endpoints
+│   │       └── 📄 config.py            # Configuration and cleanup endpoints
 │   ├── 📁 core/                         # Core functionality
 │   │   ├── 📄 __init__.py
 │   │   ├── 📄 config.py                # Application configuration
-│   │   ├── 📄 voxtral_engine.py        # Voxtral model engine
-│   │   ├── 📄 audio_processor.py       # Audio processing pipeline
+│   │   ├── 📄 voxtral_engine.py        # Voxtral model engine with batch processing
+│   │   ├── 📄 audio_processor.py       # Advanced audio processing with chunking
 │   │   ├── 📄 model_manager.py         # Model loading/caching
 │   │   └── 📄 exceptions.py            # Custom exceptions
 │   ├── 📁 services/                     # Business logic services
@@ -135,6 +137,7 @@ backend/python-service/
 │   │   ├── 📄 preprocessing.py         # Audio preprocessing
 │   │   ├── 📄 postprocessing.py        # Result postprocessing
 │   │   ├── 📄 batch_service.py         # Batch processing
+│   │   ├── 📄 cleanup_service.py       # Automatic cleanup with disk monitoring
 │   │   └── 📄 cache_service.py         # Caching service
 │   ├── 📁 models/                       # Data models
 │   │   ├── 📄 __init__.py

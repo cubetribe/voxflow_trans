@@ -18,14 +18,40 @@
 
 ## ✨ Features
 
-- 🎯 **Real-time Transcription** - Live audio streaming with instant results
-- 🔄 **Batch Processing** - Upload and process multiple audio files
-- 🎨 **Modern UI** - Apple-inspired design with dark/light themes
-- 🚀 **Apple Silicon Optimized** - MLX integration for M-series chips
-- 🌐 **Multi-format Support** - MP3, WAV, M4A, WEBM, OGG
-- 📱 **Responsive Design** - Works seamlessly on desktop and mobile
-- 🔒 **Privacy First** - Local processing, no data leaves your system
-- 📊 **Advanced Analytics** - Confidence scores and speaker detection
+### 🎯 Core Transcription Capabilities
+- 🎙️ **Real-time Streaming** - Live audio transcription with WebSocket support
+- 📁 **Batch Processing** - Multi-file upload and processing with progress tracking
+- ⏱️ **Large File Support** - Handle 2+ hour audio files with intelligent chunking
+- 🔄 **Smart Chunking** - 10-minute segments with 10-second overlap for seamless results
+- 📊 **Progress Tracking** - Real-time progress with cancellation support
+- 🎯 **High Accuracy** - Powered by Mistral's Voxtral model
+
+### 🚀 Performance & Optimization  
+- 🍎 **Apple Silicon Optimized** - MLX integration for M4/M3/M2/M1 chips
+- ⚡ **Memory Efficient** - Stream-based processing for large files
+- 🔧 **Automatic Cleanup** - Smart temporary file management
+- 📈 **Concurrent Processing** - Configurable parallel chunk processing
+- 🧠 **Voice Activity Detection** - Intelligent silence removal
+- 🎵 **Noise Reduction** - Advanced audio preprocessing
+
+### 🌐 Format Support
+- **Input**: MP3, WAV, M4A, WEBM, OGG, FLAC
+- **Output**: JSON, TXT, SRT, VTT with timestamps and confidence scores
+- **Languages**: Auto-detection with manual override support
+- **Quality**: Up to 48kHz sample rate processing
+
+### 🎨 User Experience
+- 📱 **Responsive Design** - Works seamlessly on desktop and mobile  
+- 🌙 **Dark/Light Themes** - Apple-inspired aesthetic with glassmorphism
+- 📋 **Multi-file Selection** - Drag & drop with batch configuration
+- 📂 **Output Management** - Choose destination and format preferences
+- 🔔 **Real-time Notifications** - Progress updates and completion alerts
+
+### 🔒 Privacy & Security
+- 🏠 **Local Processing** - All transcription happens on your system
+- 🗑️ **Automatic Cleanup** - Temporary files cleaned after processing  
+- 🔐 **No Cloud Dependencies** - Complete privacy protection
+- 🛡️ **Secure File Handling** - Encrypted temporary storage
 
 ## 🏗️ Architecture
 
@@ -150,9 +176,11 @@ voxflow_trans/
 ### 🔗 Related Documentation
 
 - [Backend Architecture](./voxtral-backend.md) - Detailed backend service documentation
-- [Frontend Stack](./voxtral-frontend.md) - Frontend development guide
+- [Frontend Stack](./voxtral-frontend.md) - Frontend development guide  
 - [UI/UX Design](./voxtral-ui.md) - Design system and components
+- [Project Structure](./docs/PROJECT_STRUCTURE.md) - Complete codebase navigation
 - [Claude Code Guide](./CLAUDE.md) - AI development assistance
+- [Changelog](./CHANGELOG.md) - Version history and updates
 
 ## 🛠️ Development
 
@@ -219,31 +247,66 @@ black .           # Python
 
 ### REST Endpoints
 
-#### Transcription API
+#### Single File Transcription
 ```http
-POST /api/transcribe/upload
+POST /api/transcribe/file
 Content-Type: multipart/form-data
 
 {
   "file": "audio.wav",
   "language": "auto",
-  "format": "json"
+  "format": "json",
+  "include_timestamps": true,
+  "include_confidence": true
 }
 ```
 
-#### WebSocket Events
+#### Batch Processing
+```http
+POST /api/transcribe/batch
+Content-Type: application/json
+
+{
+  "files": ["file_id_1", "file_id_2"],
+  "output_directory": "/path/to/output",
+  "format": "txt",
+  "include_timestamps": true,
+  "cleanup_after_processing": true
+}
+```
+
+#### Progress Tracking
+```http
+GET /api/transcribe/job/{job_id}/progress
+GET /api/transcribe/batch/{batch_id}/progress
+POST /api/transcribe/job/{job_id}/cancel
+```
+
+#### Configuration Management
+```http
+POST /api/config/output
+GET /api/config/current
+GET /api/config/cleanup/stats
+```
+
+#### WebSocket Streaming
 ```javascript
-// Client -> Server
-socket.emit('audio:chunk', audioBuffer);
+// Connect to streaming endpoint
+const ws = new WebSocket('ws://localhost:3000/socket');
 
-// Server -> Client  
-socket.on('transcription:partial', (data) => {
-  console.log('Partial:', data.text);
-});
+// Send audio chunks
+ws.send(JSON.stringify({
+  type: 'audio:chunk',
+  data: base64AudioData
+}));
 
-socket.on('transcription:final', (data) => {
-  console.log('Final:', data.text);
-});
+// Receive real-time results
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  if (data.type === 'transcription:partial') {
+    console.log('Partial:', data.text);
+  }
+};
 ```
 
 ## 🔧 Configuration
