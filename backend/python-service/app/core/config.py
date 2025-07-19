@@ -156,6 +156,7 @@ class Settings(BaseSettings):
         description="Metrics server port"
     )
     
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

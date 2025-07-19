@@ -251,8 +251,8 @@ class AudioProcessor:
         
         temp_path = temp_dir / f"original{file_ext}"
         
-        async with asyncio.to_thread(open, temp_path, 'wb') as f:
-            await asyncio.to_thread(f.write, audio_data)
+        # Write file in thread to avoid blocking
+        await asyncio.to_thread(self._write_file, temp_path, audio_data)
         
         self.temp_files[session_id].append(temp_path)
         logger.debug(f"Saved temporary file: {temp_path}")
@@ -333,6 +333,11 @@ class AudioProcessor:
                 "estimated_chunks": max(1, int(len(audio_segment) / 1000.0 / 60.0 / 10)),  # 10-minute chunks
                 "format": Path(filename).suffix.lower().lstrip('.'),
             }
+    
+    def _write_file(self, path: Path, data: bytes) -> None:
+        """Write file synchronously (for use with asyncio.to_thread)."""
+        with open(path, 'wb') as f:
+            f.write(data)
     
     async def cleanup_old_sessions(self, max_age_hours: int = 24) -> int:
         """Clean up old session directories."""

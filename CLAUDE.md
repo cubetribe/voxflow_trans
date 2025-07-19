@@ -354,3 +354,77 @@ VITE_CHUNK_SIZE=32
 - **Rate Limiting**: Configurable request limits per IP/user
 - **Input Validation**: Comprehensive file format and size validation
 - **CORS Configuration**: Strict origin policies for web security
+
+## Debugging and Troubleshooting
+
+### Single Test Execution
+```bash
+# Node.js service single test
+cd backend/node-service
+npm test -- --testNamePattern="specific test name"
+npm test tests/integration/api/files.test.ts
+
+# Python service single test  
+cd backend/python-service
+pytest tests/test_specific_file.py::test_specific_function -v
+pytest -k "test_pattern" -v
+```
+
+### Production Checks Before Commits
+```bash
+# MANDATORY: Run these commands before any commit
+cd backend/node-service
+npm run lint && npm run type-check && npm test
+
+cd backend/python-service  
+black . && isort . && flake8 . && mypy . && pytest
+
+cd frontend_new/project
+npm run lint && npm run build  # No separate type-check script
+```
+
+### Container Debugging
+```bash
+# Check individual service logs
+docker-compose logs -f python-service
+docker-compose logs -f node-service
+docker-compose logs -f frontend
+
+# Access service shells for debugging
+docker-compose exec python-service bash
+docker-compose exec node-service sh
+docker-compose exec redis redis-cli
+
+# Resource monitoring
+docker stats
+```
+
+### Model and Service Status
+```bash
+# Check Python service model status
+curl http://localhost:8000/models/status
+
+# Check Node.js service health
+curl http://localhost:3000/health/detailed
+
+# Monitor cleanup statistics
+curl http://localhost:8000/config/cleanup/stats
+```
+
+### Log Locations
+```bash
+# Service-specific logs
+backend/node-service/node_service.log
+backend/python-service/python_service.log
+frontend_new/project/frontend_service.log
+
+# Application logs within containers
+backend/node-service/logs/
+backend/python-service/logs/
+```
+
+## important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
