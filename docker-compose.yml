@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  # Redis for caching and job queues
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Python Voxtral Service
+  python-service:
+    build: ./backend/python-service
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - MODEL_NAME=mistralai/Voxtral-Mini-3B-2507
+      - DEVICE=mps
+      - MAX_AUDIO_LENGTH=1800
+      - CHUNK_SIZE=30
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend/python-service:/app
+      - python_cache:/root/.cache
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Node.js API Gateway
+  node-service:
+    build: ./backend/node-service
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=sqlite:./data/voxflow.db
+      - PYTHON_SERVICE_URL=http://python-service:8000
+      - JWT_SECRET=your-secret-key
+    depends_on:
+      python-service:
+        condition: service_healthy
+    volumes:
+      - ./backend/node-service:/app
+      - node_data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend React Application
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3000
+      - VITE_WS_URL=ws://localhost:3000
+      - VITE_MAX_FILE_SIZE=500
+    depends_on:
+      node-service:
+        condition: service_healthy
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5173"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  redis_data:
+  python_cache:
+  node_data:
