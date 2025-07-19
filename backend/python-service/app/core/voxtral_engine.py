@@ -36,6 +36,7 @@ except ImportError:
 
 from app.core.config import settings
 from app.core.audio_processor import AudioProcessor
+from app.core.model_loader import ProductionModelLoader, LoadingResult
 from app.models.transcription import (
     TranscriptionRequest, TranscriptionResponse, BatchTranscriptionRequest,
     BatchTranscriptionResponse, JobProgress, ProcessingStatus, ChunkResult,
@@ -73,7 +74,13 @@ class VoxtralEngine:
         self.is_loaded = False
         self.load_time: Optional[float] = None
         self.device = self._determine_device()
+        self.loading_strategy: Optional[str] = None
         self.use_mlx = MLX_AVAILABLE and self.settings.is_apple_silicon and getattr(self.settings, 'MLX_ENABLED', True)
+        
+        # Statistics tracking
+        self.total_inference_time: float = 0.0
+        self.total_transcriptions: int = 0
+        self.last_transcription_time: Optional[float] = None
         
         # Job tracking
         self.active_jobs: Dict[str, JobProgress] = {}
@@ -109,15 +116,29 @@ class VoxtralEngine:
             return "cpu"
         
     async def initialize(self) -> None:
-        """Initialize the Voxtral model with MLX optimization."""
+        """Initialize the Voxtral model with production-ready loading architecture."""
         try:
-            logger.info(f"Loading Voxtral model: {self.settings.MODEL_NAME}")
+            logger.info(f"🚀 Initializing VoxtralEngine with production-ready architecture")
+            logger.info(f"📋 Target model: {self.settings.MODEL_NAME}")
+            
             start_time = time.time()
             
-            if self.use_mlx:
-                await self._initialize_mlx()
-            else:
-                await self._initialize_pytorch()
+            # Use production model loader
+            model_loader = ProductionModelLoader(self.settings.model_cache_path)
+            loading_result: LoadingResult = await model_loader.load_model(self.settings.MODEL_NAME)
+            
+            if not loading_result.success:
+                raise RuntimeError(f"Model loading failed with all strategies: {loading_result.error_message}")
+            
+            # Store loaded components
+            self.model = loading_result.model
+            self.processor = loading_result.processor
+            self.device = loading_result.device_used.value
+            self.loading_strategy = loading_result.strategy_used.value
+            
+            # Log warnings if any
+            for warning in loading_result.warnings:
+                logger.warning(f"⚠️ {warning}")
             
             # Warmup the model for optimal performance
             await self._warmup_model()
@@ -125,17 +146,20 @@ class VoxtralEngine:
             self.load_time = time.time() - start_time
             self.is_loaded = True
             
-            logger.info(f"✅ Voxtral model loaded successfully in {self.load_time:.2f}s")
-            logger.info(f"   Engine: {'MLX' if self.use_mlx else 'PyTorch'}")
+            logger.info(f"✅ VoxtralEngine initialized successfully")
+            logger.info(f"   Loading strategy: {self.loading_strategy}")
             logger.info(f"   Device: {self.device}")
+            logger.info(f"   Total time: {self.load_time:.2f}s")
+            logger.info(f"   Model loading: {loading_result.loading_time_seconds:.2f}s")
+            logger.info(f"   Memory used: {loading_result.memory_used_mb}MB")
             
             # Start cleanup service
             await cleanup_service.start()
             
         except Exception as e:
-            logger.error(f"❌ Failed to initialize Voxtral model: {e}")
+            logger.error(f"❌ Failed to initialize VoxtralEngine: {e}")
             await self.cleanup()
-            raise RuntimeError(f"Model initialization failed: {e}") from e
+            raise RuntimeError(f"VoxtralEngine initialization failed: {e}") from e
     
     async def _initialize_mlx(self) -> None:
         """Initialize model with MLX for Apple Silicon optimization."""

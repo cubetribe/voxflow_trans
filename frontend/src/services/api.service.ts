@@ -11,6 +11,7 @@ export interface ApiResponse<T = any> {
     page?: number;
     limit?: number;
     processingTime?: number;
+    processed?: number;
   };
 }
 
@@ -236,7 +237,8 @@ export class ApiService {
   handleApiError(error: AxiosError): never {
     if (error.response) {
       // Server responded with error status
-      const message = error.response.data?.error || error.response.data?.message || 'Server error';
+      const responseData = error.response.data as any;
+      const message = responseData?.error || responseData?.message || 'Server error';
       throw new Error(`API Error (${error.response.status}): ${message}`);
     } else if (error.request) {
       // Request made but no response received

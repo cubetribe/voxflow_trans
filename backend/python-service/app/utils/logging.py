@@ -29,7 +29,7 @@ def setup_logging() -> None:
     logger.add(
         sys.stdout,
         format=log_format,
-        level=settings.LOG_LEVEL,
+        level=settings.LOG_LEVEL.upper(),
         colorize=settings.LOG_FORMAT != "json",
         backtrace=True,
         diagnose=True,
@@ -40,7 +40,7 @@ def setup_logging() -> None:
         logger.add(
             settings.LOG_FILE,
             format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {name}:{function}:{line} | {message}",
-            level=settings.LOG_LEVEL,
+            level=settings.LOG_LEVEL.upper(),
             rotation="10 MB",
             retention="7 days",
             compression="gz",

@@ -6,7 +6,7 @@ pydantic-settings==2.1.0
 
 # Audio Processing
 librosa==0.10.1
-soundfile==1.0.7
+soundfile==0.12.1
 webrtcvad==2.0.10
 pydub==0.25.1
 ffmpeg-python==0.2.0
@@ -30,7 +30,7 @@ aiofiles==23.2.1
 aioredis==2.0.1
 
 # Utilities
-python-multipart==0.0.6
+python-multipart==0.0.20
 python-dotenv==1.0.0
 click==8.1.7
 rich==13.7.0

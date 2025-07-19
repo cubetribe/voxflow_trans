@@ -250,69 +250,64 @@ black .           # Python
 
 ## 🚦 API Reference
 
-### REST Endpoints
+### REST Endpoints (Port 3000)
 
-#### Single File Transcription
+#### File Management
+```http
+POST /api/files/upload
+Content-Type: multipart/form-data
+- files: File[] (max 10 files, 500MB each)
+
+GET /api/files/info/:id
+DELETE /api/files/:id
+```
+
+#### Transcription
 ```http
 POST /api/transcribe/file
-Content-Type: multipart/form-data
-
 {
-  "file": "audio.wav",
-  "language": "auto",
-  "format": "json",
-  "include_timestamps": true,
-  "include_confidence": true
+  "fileId": "string"
 }
-```
 
-#### Batch Processing
-```http
 POST /api/transcribe/batch
-Content-Type: application/json
-
 {
-  "files": ["file_id_1", "file_id_2"],
-  "output_directory": "/path/to/output",
-  "format": "txt",
-  "include_timestamps": true,
-  "cleanup_after_processing": true
+  "fileIds": ["string"],
+  "outputDirectory": "string",
+  "format": "json|txt|srt|vtt",
+  "includeTimestamps": true,
+  "includeConfidence": true,
+  "cleanupAfterProcessing": true
 }
+
+GET /api/transcribe/job/:id/progress
+POST /api/transcribe/job/:id/cancel
 ```
 
-#### Progress Tracking
+#### Health & Config
 ```http
-GET /api/transcribe/job/{job_id}/progress
-GET /api/transcribe/batch/{batch_id}/progress
-POST /api/transcribe/job/{job_id}/cancel
-```
-
-#### Configuration Management
-```http
-POST /api/config/output
+GET /health/detailed
 GET /api/config/current
 GET /api/config/cleanup/stats
 ```
 
-#### WebSocket Streaming
+### WebSocket Events (Socket.IO)
+
 ```javascript
-// Connect to streaming endpoint
-const ws = new WebSocket('ws://localhost:3000/socket');
+// Connect
+const socket = io('http://localhost:3000');
 
-// Send audio chunks
-ws.send(JSON.stringify({
-  type: 'audio:chunk',
-  data: base64AudioData
-}));
+// Client → Server
+socket.emit('transcription:start', { sessionId, config });
+socket.emit('audio:chunk', { chunk, format, sessionId });
+socket.emit('job:subscribe', { jobId });
 
-// Receive real-time results
-ws.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  if (data.type === 'transcription:partial') {
-    console.log('Partial:', data.text);
-  }
-};
+// Server → Client
+socket.on('job:progress', (data) => { /* progress updates */ });
+socket.on('transcription:result', (data) => { /* results */ });
+socket.on('error', (data) => { /* error handling */ });
 ```
+
+For complete API documentation, see [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)
 
 ## 🔧 Configuration
 

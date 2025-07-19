@@ -2,6 +2,7 @@
 
 export interface TranscriptionResult {
   id: string;
+  jobId: string;
   fileId: string;
   filename: string;
   text: string;
@@ -17,7 +18,9 @@ export interface TranscriptionResult {
 export interface TranscriptionSegment {
   id: string;
   text: string;
+  start: number;
   startTime: number;
+  end: number;
   endTime: number;
   confidence: number;
   speaker?: string;
@@ -277,7 +280,14 @@ export interface TranscriptionFilter {
 
 // Utility types
 export type TranscriptionJobWithFile = TranscriptionJob & {
-  file: AudioFile;
+  file: {
+    id: string;
+    name: string;
+    size: number;
+    type: string;
+    duration?: number;
+    uploadedAt: Date;
+  };
 };
 
 export type PartialTranscriptionResult = Partial<TranscriptionResult> & {

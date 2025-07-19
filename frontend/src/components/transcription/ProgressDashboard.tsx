@@ -319,9 +319,9 @@ export function ProgressDashboard() {
                           </span>
                         )}
                       </span>
-                      {file.transcriptionProgress.stage && (
+                      {(file.transcriptionProgress as any).stage && (
                         <span className="text-gray-600 dark:text-gray-400">
-                          {file.transcriptionProgress.stage}
+                          {(file.transcriptionProgress as any).stage}
                         </span>
                       )}
                     </div>

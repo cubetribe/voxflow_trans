@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import { AudioFileWithProgress, TranscriptionProgress, BatchUploadConfig } from '@/types/audio.types';
+import { AudioFileWithProgress, TranscriptionProgress, BatchUploadConfig, TranscriptionFormat } from '@/types/audio.types';
 
 interface AudioState {
   // Files and Upload
@@ -41,7 +41,7 @@ interface AudioState {
 
 const defaultConfig: BatchUploadConfig = {
   outputDirectory: './transcriptions',
-  format: 'json' as const,
+  format: TranscriptionFormat.JSON,
   includeTimestamps: true,
   includeConfidence: true,
   cleanupAfterProcessing: true,

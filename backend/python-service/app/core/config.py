@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     
     # Voxtral Model Configuration
     MODEL_NAME: str = Field(
-        default="mistralai/Voxtral-Mini-3B-2507",
+        default="mistralai/Voxtral-Mini-3B-2507",  # KERNFEATURE: Voxtral!
         description="Voxtral model name"
     )
     MODEL_CACHE_DIR: str = Field(
@@ -160,6 +160,7 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = True
+        extra = "ignore"  # Allow extra environment variables
     
     @property
     def model_cache_path(self) -> Path:

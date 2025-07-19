@@ -1,4 +1,4 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { TranscriptionProgress, TranscriptionWebSocketEvent, TranscriptionEventType } from '@/types/transcription.types';
 
@@ -223,6 +223,10 @@ export class WebSocketService {
     return this.socket?.connected || false;
   }
 
+  get connected(): boolean {
+    return this.socket?.connected || false;
+  }
+
   getConnectionState(): 'connected' | 'disconnected' | 'connecting' | 'reconnecting' {
     if (this.isConnecting) return 'connecting';
     if (this.socket?.connected) return 'connected';
@@ -230,6 +234,80 @@ export class WebSocketService {
       return 'reconnecting';
     }
     return 'disconnected';
+  }
+
+  // Real-time streaming methods
+  async startLiveStreaming(config: {
+    sessionId: string;
+    sampleRate?: number;
+    channels?: number;
+    format?: string;
+  }): Promise<void> {
+    if (!this.socket?.connected) {
+      throw new Error('WebSocket not connected');
+    }
+
+    return new Promise((resolve, reject) => {
+      if (!this.socket) {
+        reject(new Error('Socket not available'));
+        return;
+      }
+
+      const timeout = setTimeout(() => {
+        reject(new Error('Stream start timeout'));
+      }, 10000);
+
+      this.socket.once('stream:started', (data: { sessionId: string }) => {
+        clearTimeout(timeout);
+        if (data.sessionId === config.sessionId) {
+          resolve();
+        } else {
+          reject(new Error('Session ID mismatch'));
+        }
+      });
+
+      this.socket.once('stream:error', (error: any) => {
+        clearTimeout(timeout);
+        reject(new Error(error.message || 'Failed to start stream'));
+      });
+
+      this.socket.emit('stream:start', config);
+    });
+  }
+
+  async stopLiveStreaming(): Promise<void> {
+    if (!this.socket?.connected) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+      if (!this.socket) {
+        resolve();
+        return;
+      }
+
+      const timeout = setTimeout(() => {
+        resolve(); // Resolve anyway after timeout
+      }, 5000);
+
+      this.socket.once('stream:stopped', () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+
+      this.socket.emit('stream:stop');
+    });
+  }
+
+  sendAudioData(data: ArrayBuffer, metadata?: { timestamp: number; sequenceNumber: number }): void {
+    if (!this.socket?.connected) {
+      throw new Error('WebSocket not connected');
+    }
+
+    this.socket.emit('audio:data', {
+      data,
+      ...metadata,
+    });
   }
 
   // Utility methods
@@ -269,9 +347,9 @@ export const getWebSocketService = (): WebSocketService => {
 export const useWebSocket = () => {
   const service = getWebSocketService();
   
-  const [connectionState, setConnectionState] = React.useState(service.getConnectionState());
+  const [connectionState, setConnectionState] = useState(service.getConnectionState());
   
-  React.useEffect(() => {
+  useEffect(() => {
     const unsubscribe = service.on('connection', (state: string) => {
       setConnectionState(state as any);
     });

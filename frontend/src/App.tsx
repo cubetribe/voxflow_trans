@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/components/common/ThemeProvider';
 import { ToastProvider } from '@/components/common/ToastProvider';
 import { DebugPanel } from '@/components/common/DebugPanel';
+import { SystemStatusPanel } from '@/components/system/SystemStatusPanel';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { HomePage } from '@/pages/Home';
 import '@/styles/globals.css';
@@ -32,6 +33,7 @@ function App() {
           <MainLayout>
             <HomePage />
           </MainLayout>
+          <SystemStatusPanel />
           <DebugPanel />
         </ToastProvider>
       </ThemeProvider>
