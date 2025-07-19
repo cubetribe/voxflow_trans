@@ -1,0 +1,165 @@
+name: ✨ Feature Request
+description: Suggest a new feature or enhancement for VoxFlow
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! ✨
+        
+        Before submitting, please:
+        - Search existing issues to avoid duplicates
+        - Consider if this fits with VoxFlow's goals
+        - Think about implementation complexity
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: 💡 Feature Summary
+      description: A clear and concise description of the feature you'd like to see
+      placeholder: What feature would you like to see added?
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 🎯 Problem Statement
+      description: |
+        What problem does this feature solve? What's the motivation?
+        Is your feature request related to a problem? Please describe.
+      placeholder: |
+        I'm always frustrated when...
+        It would be helpful if...
+        Users need to be able to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: 💭 Proposed Solution
+      description: |
+        Describe the solution you'd like to see implemented.
+        How should this feature work?
+      placeholder: |
+        I would like to see...
+        The feature should work by...
+        Users would interact with it by...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: 🎯 Component
+      description: Which part of VoxFlow would this affect?
+      options:
+        - Frontend (React UI)
+        - Backend (Node.js API)
+        - Python Service (Voxtral)
+        - Audio Processing
+        - Export/Import
+        - WebSocket Connection
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 🚨 Priority
+      description: How important is this feature?
+      options:
+        - High (Critical for workflow)
+        - Medium (Would significantly improve experience)
+        - Low (Nice to have)
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 🔄 Alternatives Considered
+      description: |
+        Describe any alternative solutions or features you've considered.
+        Are there existing workarounds?
+      placeholder: |
+        Alternative 1: ...
+        Alternative 2: ...
+        Current workaround: ...
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: 🎨 Mockups/Examples
+      description: |
+        If applicable, add mockups, sketches, or examples of similar features.
+        You can drag and drop images here.
+
+  - type: textarea
+    id: technical
+    attributes:
+      label: 🔧 Technical Considerations
+      description: |
+        Any technical details, constraints, or implementation ideas?
+        What would need to change in the codebase?
+      placeholder: |
+        - New API endpoints needed
+        - Database schema changes
+        - New dependencies
+        - Performance implications
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: ⚡ Implementation Complexity
+      description: How complex do you think this feature would be to implement?
+      options:
+        - Simple (Few hours of work)
+        - Medium (Few days of work)
+        - Complex (Weeks of work)
+        - Unknown
+
+  - type: textarea
+    id: user_stories
+    attributes:
+      label: 👥 User Stories
+      description: |
+        Describe how different users would benefit from this feature.
+        Write user stories in the format: "As a [user type], I want [goal] so that [benefit]"
+      placeholder: |
+        As a podcast host, I want to export timestamps so that I can create show notes quickly.
+        As a journalist, I want speaker identification so that I can attribute quotes correctly.
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: ✅ Acceptance Criteria
+      description: |
+        What would need to be true for this feature to be considered complete?
+        List specific, testable criteria.
+      placeholder: |
+        - [ ] Users can access the feature from the main interface
+        - [ ] Feature works with all supported audio formats
+        - [ ] Feature includes proper error handling
+        - [ ] Feature is documented in the user guide
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: ✅ Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues for duplicates
+          required: true
+        - label: This feature aligns with VoxFlow's purpose (voice transcription)
+          required: true
+        - label: I have provided a clear description and justification
+          required: true
+        - label: I understand this is a request, not a guarantee of implementation
+          required: true

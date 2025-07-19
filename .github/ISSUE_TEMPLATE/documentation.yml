@@ -1,0 +1,129 @@
+name: 📚 Documentation
+description: Report issues with documentation or suggest improvements
+title: "[Docs]: "
+labels: ["documentation", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve our documentation! 📚
+        
+        Good documentation is crucial for a great developer experience.
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: 📋 Documentation Type
+      description: What type of documentation issue is this?
+      options:
+        - Missing documentation
+        - Incorrect/outdated information
+        - Unclear/confusing content
+        - Broken links
+        - Typos/grammar
+        - Code examples not working
+        - API documentation
+        - Setup/installation guide
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: location
+    attributes:
+      label: 📍 Location
+      description: |
+        Where is the documentation issue located?
+        Please provide specific file paths, URLs, or section names.
+      placeholder: |
+        - File: README.md, line 42
+        - URL: https://github.com/cubetribe/voxflow_trans/wiki/setup
+        - Section: "Backend Setup" in CONTRIBUTING.md
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: 🐛 Issue Description
+      description: |
+        Describe the documentation issue clearly.
+        What's wrong, missing, or confusing?
+      placeholder: |
+        The current documentation says... but it should say...
+        Step 3 in the setup guide is unclear because...
+        The API endpoint example returns a 404 error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: improvement
+    attributes:
+      label: ✨ Suggested Improvement
+      description: |
+        How should this be fixed or improved?
+        If you have specific text suggestions, please include them.
+      placeholder: |
+        Suggest changing from:
+        "Run npm install"
+        
+        To:
+        "Run npm install in the backend/node-service directory"
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 🎯 User Context
+      description: |
+        Who would benefit from this improvement?
+        What was your experience when encountering this issue?
+      placeholder: |
+        As a new contributor, I was confused by...
+        When setting up the development environment, I expected...
+        Other developers might struggle with...
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 🚨 Priority
+      description: How important is this documentation fix?
+      options:
+        - High (Blocks new users/contributors)
+        - Medium (Causes confusion but has workarounds)
+        - Low (Minor improvement)
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 📝 Additional Context
+      description: |
+        Any additional context, screenshots, or examples that would help?
+        You can drag and drop images here.
+
+  - type: checkboxes
+    id: offer_help
+    attributes:
+      label: 🤝 Contribution
+      description: Would you like to help fix this documentation issue?
+      options:
+        - label: I'd like to submit a PR to fix this documentation issue
+          required: false
+        - label: I need guidance on how to contribute documentation changes
+          required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: ✅ Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues for duplicates
+          required: true
+        - label: I have provided specific location information
+          required: true
+        - label: I have clearly described the issue and suggested improvement
+          required: true

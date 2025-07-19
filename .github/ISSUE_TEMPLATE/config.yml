@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discord Community
+    url: https://discord.gg/voxflow
+    about: Join our Discord community for general questions and discussions
+  - name: 📧 Email Support  
+    url: mailto:support@cubetribe.com
+    about: Contact us directly for private inquiries or sensitive issues
+  - name: 🌐 Website
+    url: https://cubetribe.com
+    about: Visit our website for more information about CubeTribe
+  - name: 📖 Documentation
+    url: https://github.com/cubetribe/voxflow_trans/wiki
+    about: Check our documentation and guides before reporting issues
