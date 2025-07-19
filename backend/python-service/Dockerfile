@@ -24,15 +24,12 @@ RUN pip install --no-cache-dir --upgrade \
     setuptools \
     wheel
 
-# Copy requirements first for better Docker layer caching
-COPY requirements.txt .
+# Copy Docker-specific requirements (without MLX for Linux containers)
+COPY requirements-docker.txt .
 
-# Install Python dependencies with wheel caching
-# This creates wheels for faster subsequent installs
-RUN pip install --no-cache-dir \
-    --find-links /tmp/wheels \
-    --wheel-dir /tmp/wheels \
-    -r requirements.txt
+# Install Python dependencies 
+# Modern pip doesn't need --wheel-dir, uses cache automatically
+RUN pip install --no-cache-dir -r requirements-docker.txt
 
 #
 # Stage 2: Production runtime stage

@@ -318,7 +318,7 @@ export class AudioService {
       try {
         await cleanupService.cleanupPath(file.tempPath);
       } catch (error) {
-        logger.warning(`Failed to delete file ${file.tempPath}:`, error);
+        logger.warn(`Failed to delete file ${file.tempPath}:`, error);
       }
     }
 
@@ -379,7 +379,7 @@ export class AudioService {
       return response.data;
 
     } catch (error) {
-      logger.warning(`Failed to get audio info for ${filename}:`, error);
+      logger.warn(`Failed to get audio info for ${filename}:`, error);
       return null;
     }
   }

@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🚀 MAJOR UPDATE - Enhanced Startup Experience & Docker Fixes (2025-07-19)
+
+### 🎯 Added - Production-Ready Startup System
+- **Enhanced VoxFlow-Start.command** with interactive introduction explaining VoxFlow capabilities
+- **Debug Mode Selection** - Optional detailed logging, system information, and troubleshooting
+- **Intelligent Directory Validation** - Automatic path checks for frontend_new/project structure
+- **Auto Browser Launch** - Seamless opening of web interface at http://localhost:5173
+- **Interactive Service Management** - Terminal menu for logs, status checks, and service restarts
+- **Real-time Health Monitoring** - Service status verification with timeout handling
+
+### 🐛 Fixed - Critical Docker & Path Issues
+- **MLX Compatibility Fix** - Created separate requirements-docker.txt without MLX for Linux containers
+- **Frontend Path Migration** - Updated all scripts to use frontend_new/project/ instead of frontend/
+- **Docker Compose Configuration** - Fixed build context and volume mounts for new project structure
+- **Script Working Directory** - Added cd "$(dirname "$0")" for proper relative path resolution
+- **Python Dependencies** - Resolved version conflicts and missing packages for Docker builds
+
+### 🔧 Technical Improvements
+- **Dual Requirements Strategy** - requirements.txt (with MLX for native) + requirements-docker.txt (Linux compatible)
+- **Enhanced Error Handling** - Clear error messages with suggested solutions
+- **Directory Structure Validation** - Proactive checks before service startup
+- **Environment File Management** - Automatic creation of required .env files
+- **JWT/Session Secret Warnings** - Proper environment variable handling
+
+### 📚 Documentation Updates
+- **README.md Enhancement** - Updated Quick Start section with new VoxFlow-Start.command features
+- **Installation Instructions** - Clear differentiation between Docker and manual setup options
+- **Debug Mode Documentation** - Comprehensive guide for troubleshooting and development
+
 ### 🎉 MAJOR MILESTONE - Complete Frontend Implementation + M4 Max Optimization
 
 ### 🎨 Added - Modern UI/UX Redesign (2025-07-19)

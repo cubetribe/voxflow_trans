@@ -190,8 +190,8 @@ services:
   # React Frontend - User Interface
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: ./frontend_new/project
+      dockerfile: ../../frontend/Dockerfile
     container_name: voxflow-frontend
     hostname: frontend
     networks:
@@ -213,12 +213,12 @@ services:
         condition: service_healthy
     volumes:
       # Development hot-reload
-      - ./frontend/src:/app/src:ro
-      - ./frontend/public:/app/public:ro
-      - ./frontend/index.html:/app/index.html:ro
-      - ./frontend/vite.config.ts:/app/vite.config.ts:ro
-      - ./frontend/tailwind.config.js:/app/tailwind.config.js:ro
-      - ./frontend/postcss.config.js:/app/postcss.config.js:ro
+      - ./frontend_new/project/src:/app/src:ro
+      - ./frontend_new/project/public:/app/public:ro
+      - ./frontend_new/project/index.html:/app/index.html:ro
+      - ./frontend_new/project/vite.config.ts:/app/vite.config.ts:ro
+      - ./frontend_new/project/tailwind.config.js:/app/tailwind.config.js:ro
+      - ./frontend_new/project/postcss.config.js:/app/postcss.config.js:ro
       # Node modules volume for performance
       - frontend_node_modules:/app/node_modules
     deploy:

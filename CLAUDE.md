@@ -21,6 +21,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Begründe warum die Lösung production-ready ist
 - Keine Shortcuts!
 
+### QUALITÄTS-STANDARDS:
+- **TypeScript Strict Mode**: Alle Type-Fehler behoben
+- **Error Boundaries**: Graceful degradation auf allen Ebenen
+- **Input Validation**: Zod schemas für alle API endpoints
+- **Security Headers**: Helmet, CORS, Rate Limiting implementiert
+- **Structured Logging**: Winston mit JSON format in Production
+- **Health Checks**: Detaillierte Service-Monitoring
+- **Testing Requirements**: 90%+ Coverage für business logic
+- **Performance**: <200ms für API calls, <2s für file uploads
+
 ## Project Overview
 
 VoxFlow is a voice transcription application using Voxtral (Mistral's speech-to-text model) with a dual-service architecture:
@@ -63,17 +73,20 @@ flake8 .                # Lint code
 mypy .                  # Type checking
 ```
 
-### Frontend Development
+### Frontend Development (Current State: Active in frontend_new/project/)
+**NOTE: The frontend is actively developed in `frontend_new/project/` - legacy frontend is backed up**
+
 ```bash
-cd frontend
-pnpm install
-pnpm dev           # Development server (Vite)
-pnpm build         # Production build
-pnpm preview       # Preview production build
-pnpm type-check    # TypeScript checking
-pnpm lint          # ESLint checking
-pnpm test          # Unit tests (Vitest)
-pnpm test:e2e      # End-to-end tests (Playwright)
+# Active frontend (production-ready)
+cd frontend_new/project
+npm install
+npm run dev        # Development server (Vite)
+npm run build      # Production build
+npm run lint       # ESLint checking
+npm run type-check # TypeScript checking
+
+# Legacy frontend (backed up in frontend/src_backup_20250719_165420/)
+# Use only for reference - DO NOT develop here
 ```
 
 ### Full Stack Development
@@ -88,8 +101,32 @@ cd backend/python-service && uvicorn app.main:app --reload --port 8000
 # Terminal 3: Node.js Gateway
 cd backend/node-service && npm run dev
 
-# Terminal 4: Frontend (when implemented)
-cd frontend && pnpm dev
+# Terminal 4: Frontend (choose active version)
+cd frontend_new/project && npm run dev  # OR
+cd frontend && npm run dev
+```
+
+### Quick Start Scripts (Launcher Commands)
+The project includes production-ready launcher scripts:
+
+```bash
+# RECOMMENDED: Enhanced startup experience
+./VoxFlow-Start.command     # Interactive startup with debug mode option
+./start-dev.sh             # Command-line alternative
+
+# Features of VoxFlow-Start.command:
+# - Interactive VoxFlow introduction
+# - Optional debug mode with system info
+# - Automatic directory validation  
+# - Browser auto-launch
+# - Service management menu (logs, status, restart)
+
+# Legacy scripts (REMOVED for safety):
+# - VoxFlow.command, VoxFlow-Local.command, VoxFlow-Debug.command
+# - All removed due to system crash issues
+
+# Redis installation (one-time setup)
+./install-redis.command    # Automated Redis installation via Homebrew
 ```
 
 ## Architecture
@@ -98,11 +135,12 @@ cd frontend && pnpm dev
 - **Node.js Gateway**: Express.js with TypeScript, Socket.io for real-time, Multer for uploads, Bull for job queue, Redis for caching, SQLite for metadata
 - **Python Service**: FastAPI, vLLM/Hugging Face Transformers, MLX for Apple Silicon optimization, Pydantic validation, asyncio, FFmpeg integration
 
-### Frontend Stack
-- **Core**: React 18.3 with TypeScript 5.3+, Vite 5.0, pnpm
-- **UI**: TailwindCSS 3.4, Framer Motion, Radix UI, Lucide React
-- **Audio**: WaveSurfer.js 7.0, Web Audio API, Tone.js
-- **State**: Zustand, Socket.io-client, TanStack Query, Axios
+### Frontend Stack (Updated)
+- **Core**: React 19.1 with TypeScript 5.8+, Vite 7.0, npm
+- **UI**: TailwindCSS 4.1, Framer Motion 12.23, Radix UI, Lucide React 0.525
+- **Audio**: WaveSurfer.js 7.10, Web Audio API
+- **State**: Zustand 5.0, Socket.io-client 4.8, TanStack Query 5.83, Axios 1.10
+- **Testing**: Vitest 3.2, Playwright 1.54, Testing Library 16.3
 
 ### Data Flow
 ```
@@ -222,15 +260,41 @@ GET    /health/live                   # Liveness probe
 
 ## Environment Variables
 
-### Frontend
+### Frontend (.env.local)
 ```env
 VITE_API_URL=http://localhost:3000
 VITE_WS_URL=ws://localhost:3000
-VITE_MAX_FILE_SIZE=500MB
-VITE_CHUNK_SIZE=32KB
+VITE_MAX_FILE_SIZE=500
+VITE_CHUNK_SIZE=32
 ```
 
+## Current Project State
+
+### Frontend Status
+- **Active Frontend**: Production-ready React app in `frontend_new/project/` 
+- **Legacy Frontend**: Complete React app backed up in `frontend/src_backup_20250719_165420/`
+- **Docker Integration**: Updated docker-compose.yml for frontend_new/project/ structure
+- **Path Migration**: All scripts and configs updated for new frontend location
+
+### Backend Status
+- **Node.js Service**: Production-ready with comprehensive API endpoints
+- **Python Service**: MLX-optimized Voxtral integration for Apple Silicon
+- **Database**: SQLite with proper migrations in `backend/node-service/data/`
+
+### Testing Strategy
+- **Node.js**: Jest with integration tests in `backend/node-service/tests/`
+- **Python**: pytest with async support in `backend/python-service/tests/`
+- **Frontend**: Vitest + Playwright (when active frontend is determined)
+
 ## Key Development Patterns
+
+### Docker & Dependency Management
+- **Dual Requirements Strategy**: 
+  - `requirements.txt` - Full dependencies with MLX for native macOS
+  - `requirements-docker.txt` - Linux-compatible subset for Docker builds
+- **Frontend Path Structure**: All paths point to `frontend_new/project/`
+- **Directory Validation**: Scripts validate paths before execution
+- **Environment Management**: Automatic .env file creation with defaults
 
 ### Large File Processing
 - **Chunking Strategy**: 10-minute segments with 10-second overlap

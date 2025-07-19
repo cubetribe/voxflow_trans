@@ -91,7 +91,7 @@ graph TB
 
 ## 🚀 Quick Start
 
-### 🎯 **Empfohlener Start (M4 Max Optimiert)**
+### 🎯 **Empfohlener Start (Production-Ready)**
 
 1. **Repository klonen**
    ```bash
@@ -103,14 +103,20 @@ graph TB
    - Launcher → Docker Desktop
    - Warten bis das Whale-Icon in der Menüleiste erscheint
 
-3. **Redis für optimale Performance (optional)**
-   - Doppelklick auf `install-redis.command`
-   - Folge den Anweisungen (automatisches Homebrew + Redis Setup)
+3. **VoxFlow starten** 🚀
+   - **Doppelklick auf `VoxFlow-Start.command`** (Empfohlen)
+   - Oder Terminal: `./start-dev.sh`
+   
+   **Neue Features:**
+   - 🎙️ **Interaktive Einführung** - Was ist VoxFlow?
+   - 🐛 **Debug-Modus wählbar** - Detaillierte System-Informationen
+   - 📊 **Verzeichnis-Checks** - Automatische Pfad-Validierung
+   - 🌐 **Auto-Browser Start** - Öffnet automatisch http://localhost:5173
+   - 🔧 **Service-Management** - Interaktives Terminal-Menü (Logs, Status, Restart)
 
-4. **VoxFlow starten**
-   - Doppelklick auf **`VoxFlow-Local.command`** ⚡ (empfohlen für M4 Max)
-   - ODER `VoxFlow.command` 🐳 (vollständige Docker-Umgebung)
-   - Browser öffnet automatisch http://localhost:5173
+4. **Redis für optimale Performance (optional)**
+   - Doppelklick auf `install-redis.command`
+   - Automatisches Homebrew + Redis Setup
 
 ### 🛠️ **Alternative: Manuelle Installation**
 
