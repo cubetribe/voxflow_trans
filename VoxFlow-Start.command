@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# VoxFlow Native Development Launcher
-# Production-ready double-click launcher for macOS
-# Optimized for Apple Silicon with comprehensive error handling
+# VoxFlow Fast Launcher - "Install Once, Run Many"
+# Production-ready instant startup without installations
+# Requires prior installation via VoxFlow-Install.command
 
 set -e
 
@@ -11,6 +11,9 @@ cd "$(dirname "$0")"
 
 # Terminal-Konfiguration für bessere Darstellung
 export TERM="${TERM:-xterm-256color}"
+
+# Installation Marker
+INSTALLATION_MARKER=".installation_complete"
 
 # Cleanup function für graceful shutdown
 cleanup() {
@@ -24,97 +27,87 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 clear
-echo "🎙️  VoxFlow - AI Voice Transcription Platform"
-echo "============================================="
+echo "🚀 VoxFlow Fast Launcher - Instant Startup"
+echo "=========================================="
 echo ""
-echo "🤖 Was ist VoxFlow?"
-echo "   • Professionelle KI-basierte Audio-Transkription"
-echo "   • Powered by Mistral's Voxtral-Mini-3B-2507 Model"
-echo "   • Native Apple Silicon Optimierung (M1/M2/M3/M4)"
-echo "   • Unterstützt: MP3, WAV, M4A, WEBM, OGG, FLAC"
-echo "   • Batch-Verarbeitung bis 500MB pro Datei"
-echo ""
-echo "🏗️  Native Architektur (kein Docker):"
-echo "   🔴 Redis Server (Port 6379) - Native Daemon"
-echo "   🐍 Python Voxtral Service (Port 8000) - MPS Optimized"
-echo "   🟢 Node.js API Gateway (Port 3000) - Hot Reload"
-echo "   ⚛️  React Frontend (Port 5173) - Vite Dev Server"
+echo "🎯 FAST START MODUS:"
+echo "   ⚡ Keine Installations-Wartezeit"
+echo "   🚀 Direkter Service-Start in <5 Sekunden"
+echo "   🎙️  Sofortige Voxtral-Verfügbarkeit"
 echo ""
 
-# PRODUCTION-READY SYSTEM CHECKS
-echo "🔍 System-Validierung..."
-
-# Check 1: macOS Version
-macos_version=$(sw_vers -productVersion)
-echo "   ✅ macOS: $macos_version"
-
-# Check 2: Apple Silicon Detection
-if [[ $(uname -m) == "arm64" ]]; then
-    echo "   ✅ Apple Silicon: $(sysctl -n machdep.cpu.brand_string)"
-else
-    echo "   ⚠️  Intel-Chip erkannt - Performance kann eingeschränkt sein"
-fi
-
-# Check 3: Verfügbarer RAM
-ram_gb=$(sysctl hw.memsize | awk '{print int($2/1024/1024/1024)}')
-echo "   ✅ Verfügbarer RAM: ${ram_gb}GB"
-if [ $ram_gb -lt 8 ]; then
-    echo "   ⚠️  Warnung: <8GB RAM - große Dateien können problematisch sein"
-fi
-
-# Check 4: Verzeichnis-Struktur
-echo "   🔍 Projekt-Struktur..."
-project_errors=0
-
-if [ ! -d "frontend" ]; then
-    echo "   ❌ Frontend-Verzeichnis 'frontend/' fehlt!"
-    project_errors=$((project_errors + 1))
-else
-    echo "   ✅ Frontend: frontend/"
-fi
-
-if [ ! -d "backend/node-service" ]; then
-    echo "   ❌ Node.js Service 'backend/node-service/' fehlt!"
-    project_errors=$((project_errors + 1))
-else
-    echo "   ✅ Node.js Service: backend/node-service/"
-fi
-
-if [ ! -d "backend/python-service" ]; then
-    echo "   ❌ Python Service 'backend/python-service/' fehlt!"
-    project_errors=$((project_errors + 1))
-else
-    echo "   ✅ Python Service: backend/python-service/"
-fi
-
-if [ ! -f "start-dev.sh" ]; then
-    echo "   ❌ Native Startup-Script 'start-dev.sh' fehlt!"
-    project_errors=$((project_errors + 1))
-else
-    echo "   ✅ Native Startup: start-dev.sh"
-fi
-
-# Validierung der Projekt-Struktur
-if [ $project_errors -gt 0 ]; then
+# CRITICAL: Check Installation Status
+if [ ! -f "$INSTALLATION_MARKER" ]; then
+    echo "❌ VoxFlow ist noch nicht installiert!"
     echo ""
-    echo "❌ FEHLER: Projekt-Struktur unvollständig ($project_errors Probleme)"
-    echo "   💡 Lösung: Repository neu klonen oder Struktur reparieren"
-    echo "   📂 Erwartete Struktur:"
-    echo "      VoxFlow_Traskriber/"
-    echo "      ├── frontend/"
-    echo "      ├── backend/node-service/"
-    echo "      ├── backend/python-service/"
-    echo "      └── start-dev.sh"
+    echo "🔧 ERFORDERLICHE SCHRITTE:"
+    echo "   1. Führe zuerst aus: ./VoxFlow-Install.command"
+    echo "   2. Warte auf erfolgreiche Installation"
+    echo "   3. Danach: ./VoxFlow-Start.command für schnellen Start"
     echo ""
-    read -p "   Drücke Enter zum Beenden..."
+    echo "💡 WARUM INSTALLATION NÖTIG?"
+    echo "   • Python Dependencies (Voxtral + FastAPI)"
+    echo "   • Node.js Dependencies (Express + TypeScript)"
+    echo "   • React Dependencies (Vite + TailwindCSS)"
+    echo "   • System-Optimierung für Apple Silicon"
+    echo ""
+    echo "⏱️  Installation dauert einmalig 5-10 Minuten"
+    echo "🚀 Danach: Start in <5 Sekunden!"
+    echo ""
+    read -p "Drücke Enter zum Beenden..."
     exit 1
 fi
 
+# Display Installation Info
+echo "✅ VoxFlow Installation gefunden:"
 echo ""
-echo "✅ System-Validierung erfolgreich!"
+head -10 "$INSTALLATION_MARKER" | sed 's/^/   /'
 echo ""
 
-# STARTUP-MODUS AUSWAHL
+# Quick System Health Check (no installations!)
+echo "🔍 Schnelle System-Prüfung..."
+
+# Check 1: Installation Integrity
+required_markers=("backend/python-service/.deps_installed" "backend/node-service/.deps_installed" "frontend/.deps_installed")
+missing_deps=0
+
+for marker in "${required_markers[@]}"; do
+    if [ ! -f "$marker" ]; then
+        echo "   ⚠️  Fehlend: $marker"
+        missing_deps=$((missing_deps + 1))
+    fi
+done
+
+if [ $missing_deps -gt 0 ]; then
+    echo ""
+    echo "⚠️  INSTALLATION UNVOLLSTÄNDIG!"
+    echo "   🔧 Gefunden: $missing_deps fehlende Komponenten"
+    echo "   💡 Lösung: ./VoxFlow-Install.command erneut ausführen"
+    echo ""
+    read -p "Drücke Enter zum Beenden..."
+    exit 1
+fi
+
+# Check 2: Critical Dependencies
+echo "   ✅ Python Dependencies"
+echo "   ✅ Node.js Dependencies"
+echo "   ✅ Frontend Dependencies"
+
+# Check 3: Basic System Info
+macos_version=$(sw_vers -productVersion)
+echo "   ✅ macOS: $macos_version"
+
+if [[ $(uname -m) == "arm64" ]]; then
+    echo "   ✅ Apple Silicon Ready"
+else
+    echo "   ⚠️  Intel Chip (Performance eingeschränkt)"
+fi
+
+echo ""
+echo "✅ System bereit für VoxFlow Start!"
+echo ""
+
+# STARTUP MODE SELECTION (simplified - no installations)
 echo "🚀 Startup-Modus wählen:"
 echo "   [1] 🎯 Standard-Start (empfohlen)"
 echo "   [2] 🐛 Debug-Modus (erweiterte Logs)"
@@ -149,22 +142,27 @@ done
 
 echo ""
 
-# PRODUCTION-READY STARTUP
+# ULTRA-FAST STARTUP (no dependency installations)
 if [[ $ADVANCED_MODE == "true" ]]; then
     echo "🔧 Starte erweiterte Terminal-Interface..."
     echo "   💡 Verwende Ctrl+C zum Beenden"
+    echo "   ⚡ KEIN npm install - sofortiger Start!"
     echo ""
-    sleep 2
+    sleep 1
     
     # Führe start-dev.sh mit vollem Terminal-Interface aus
     exec ./start-dev.sh
 else
-    echo "🚀 Starte VoxFlow Native Development Environment..."
-    echo "   ⏳ Dies kann beim ersten Start einige Minuten dauern..."
-    echo "   🔄 Services werden automatisch gestartet und getestet"
+    echo "⚡ VoxFlow Ultra-Fast Startup..."
+    echo "   🚀 Alle Dependencies bereits installiert"
+    echo "   ⏳ Start in wenigen Sekunden..."
+    echo "   🎙️  Voxtral sofort verfügbar"
     echo ""
     
-    # Führe start-dev.sh mit automatischem Debug-Modus aus
+    # Environment Variable für start-dev.sh: Skip installations
+    export VOXFLOW_FAST_START="true"
+    
+    # Führe start-dev.sh mit automatischem Debug-Modus aus (skip installations)
     echo "$DEBUG_MODE" | ./start-dev.sh
 fi
 

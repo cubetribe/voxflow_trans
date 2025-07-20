@@ -242,29 +242,42 @@ start_python_service() {
     echo "🐍 Starting Python Voxtral service..."
     cd backend/python-service
     
-    # Create venv if not exists
-    if [ ! -d "venv" ]; then
-        echo "   📦 Creating Python virtual environment..."
-        python3 -m venv venv
-    fi
-    
-    # Activate venv and install dependencies
-    source venv/bin/activate
-    
-    if [ ! -f "venv/.deps_installed" ]; then
-        echo "   📋 Installing Python dependencies (production-ready)..."
-        # Install core dependencies first (Python 3.13 compatible)
-        pip install fastapi uvicorn transformers torch torchaudio numpy pydantic pydantic-settings
-        # Install Voxtral-specific dependencies
-        pip install git+https://github.com/huggingface/transformers.git mistral-common
-        # Install audio processing
-        pip install soundfile librosa
-        # Install logging and utilities
-        pip install loguru aiofiles python-multipart
+    # Check for FAST_START mode
+    if [ "$VOXFLOW_FAST_START" = "true" ]; then
+        echo "   ⚡ Fast Start Mode - skipping dependency installation"
+        if [ ! -d "venv" ]; then
+            echo "   ❌ ERROR: venv not found - run VoxFlow-Install.command first"
+            return 1
+        fi
+        if [ ! -f ".deps_installed" ]; then
+            echo "   ❌ ERROR: Dependencies not installed - run VoxFlow-Install.command first"
+            return 1
+        fi
+    else
+        # Legacy installation mode (for backwards compatibility)
+        if [ ! -d "venv" ]; then
+            echo "   📦 Creating Python virtual environment..."
+            python3 -m venv venv
+        fi
         
-        touch venv/.deps_installed
-        echo "   ✅ Production dependencies installed successfully"
+        if [ ! -f ".deps_installed" ]; then
+            echo "   📋 Installing Python dependencies (production-ready)..."
+            # Install core dependencies first (Python 3.13 compatible)
+            pip install fastapi uvicorn transformers torch torchaudio numpy pydantic pydantic-settings
+            # Install Voxtral-specific dependencies
+            pip install git+https://github.com/huggingface/transformers.git mistral-common
+            # Install audio processing
+            pip install soundfile librosa
+            # Install logging and utilities
+            pip install loguru aiofiles python-multipart
+            
+            touch .deps_installed
+            echo "   ✅ Production dependencies installed successfully"
+        fi
     fi
+    
+    # Activate venv
+    source venv/bin/activate
     
     # Test Voxtral before starting service (Production-Ready validation)
     echo "   🎯 Testing Voxtral model functionality..."
@@ -301,11 +314,24 @@ start_node_service() {
     echo "🟢 Starting Node.js API Gateway..."
     cd backend/node-service
     
-    # Install dependencies if needed
-    if [ ! -d "node_modules" ] || [ ! -f ".deps_installed" ]; then
-        echo "   📦 Installing Node.js dependencies..."
-        npm install
-        touch .deps_installed
+    # Check for FAST_START mode
+    if [ "$VOXFLOW_FAST_START" = "true" ]; then
+        echo "   ⚡ Fast Start Mode - skipping dependency installation"
+        if [ ! -d "node_modules" ]; then
+            echo "   ❌ ERROR: node_modules not found - run VoxFlow-Install.command first"
+            return 1
+        fi
+        if [ ! -f ".deps_installed" ]; then
+            echo "   ❌ ERROR: Dependencies not installed - run VoxFlow-Install.command first"
+            return 1
+        fi
+    else
+        # Legacy installation mode (for backwards compatibility)
+        if [ ! -d "node_modules" ] || [ ! -f ".deps_installed" ]; then
+            echo "   📦 Installing Node.js dependencies..."
+            npm install
+            touch .deps_installed
+        fi
     fi
     
     # Start service in background
@@ -333,11 +359,24 @@ start_frontend() {
     echo "⚛️  Starting React Frontend..."
     cd frontend
     
-    # Install dependencies if needed
-    if [ ! -d "node_modules" ] || [ ! -f ".deps_installed" ]; then
-        echo "   📦 Installing Frontend dependencies..."
-        npm install
-        touch .deps_installed
+    # Check for FAST_START mode
+    if [ "$VOXFLOW_FAST_START" = "true" ]; then
+        echo "   ⚡ Fast Start Mode - skipping dependency installation"
+        if [ ! -d "node_modules" ]; then
+            echo "   ❌ ERROR: node_modules not found - run VoxFlow-Install.command first"
+            return 1
+        fi
+        if [ ! -f ".deps_installed" ]; then
+            echo "   ❌ ERROR: Dependencies not installed - run VoxFlow-Install.command first"
+            return 1
+        fi
+    else
+        # Legacy installation mode (for backwards compatibility)
+        if [ ! -d "node_modules" ] || [ ! -f ".deps_installed" ]; then
+            echo "   📦 Installing Frontend dependencies..."
+            npm install
+            touch .deps_installed
+        fi
     fi
     
     # Start frontend in background

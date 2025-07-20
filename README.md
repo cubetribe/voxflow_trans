@@ -109,29 +109,53 @@ graph TB
 - **Redis** (auto-installed if missing)
 - **16GB+ RAM** recommended for large files
 
-#### 🚀 **Ultra-Fast Setup (30 seconds)**
+#### 🚀 **Professional "Install Once, Run Many" Setup**
+
+**NEW:** VoxFlow now uses a professional 2-step installation system for ultra-fast startups!
+
 ```bash
 # 1. Clone repository
 git clone <your-repo-url>
 cd VoxFlow_Traskriber
 
-# 2. One-command startup
-./start-dev.sh
+# 2. One-time installation (5-10 minutes)
+./VoxFlow-Install.command
+
+# 3. Ultra-fast startup (<5 seconds)
+./VoxFlow-Start.command
 ```
 
-**That's it!** 🎉 VoxFlow automatically:
-- ✅ Checks and installs dependencies (Python 3.13 compatible)
-- ✅ Creates production-ready Python virtual environment
-- ✅ Tests Voxtral model functionality before startup
-- ✅ Installs npm packages for all services  
-- ✅ Starts all services with health checks
-- ✅ Opens browser to http://localhost:5173
+#### ⚡ **Why This Approach?**
+- **First Time**: Complete installation with dependency validation
+- **Every Time After**: Instant startup without npm/pip delays
+- **Production-Ready**: Atomic operations, comprehensive error handling
+- **Troubleshooting**: Clean reset with ./VoxFlow-Reset.command
 
-#### 🔧 **What start-dev.sh does:**
-- **Redis Server** → Port 6379 (auto-installed if missing)
-- **Python Voxtral Service** → Port 8000 (with production venv + Voxtral testing)
-- **Node.js API Gateway** → Port 3000 (hot reload enabled)
-- **React Frontend** → Port 5173 (Vite dev server)
+#### 📋 **What VoxFlow-Install.command does:**
+- ✅ System requirements validation (Python 3.11+, Node 18+, 8GB+ RAM)
+- ✅ Apple Silicon optimization detection
+- ✅ Production-ready Python virtual environment
+- ✅ Voxtral model testing and validation
+- ✅ Node.js dependencies with retry logic
+- ✅ React frontend dependencies
+- ✅ Environment configuration
+- ✅ Creates .installation_complete marker
+
+#### 🚀 **What VoxFlow-Start.command does:**
+- ⚡ Checks installation status (instant)
+- 🔍 Quick system health validation  
+- 🚀 Direct service startup (no installations)
+- 🌐 Auto browser launch to http://localhost:5173
+- 📊 Interactive service management
+
+#### 🧹 **Reset & Troubleshooting:**
+```bash
+# Clean slate reset (removes all installations)
+./VoxFlow-Reset.command
+
+# Then re-install
+./VoxFlow-Install.command
+```
 
 #### 📊 **Interactive Management**
 The script provides an interactive menu:
