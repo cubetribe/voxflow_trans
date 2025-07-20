@@ -33,10 +33,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-VoxFlow is a voice transcription application using Voxtral (Mistral's speech-to-text model) with a dual-service architecture:
+VoxFlow is a production-ready voice transcription platform using Mistral's Voxtral-Mini-3B-2507 model with native Apple Silicon optimization:
 
 - **Node.js API Gateway** (Port 3000): Request routing, authentication, WebSocket management, file handling
-- **Python Voxtral Service** (Port 8000): Model loading, audio processing, transcription engine, streaming support
+- **Python Voxtral Service** (Port 8000): Model loading, audio processing, transcription engine with dynamic token limits
+- **React Frontend** (Port 5173): Modern UI with system prompt editor and real-time progress tracking
+
+## 🎯 Version 0.9 Production Improvements
+
+### Critical Fixes Implemented
+- **Dynamic Token Limits**: Eliminated text truncation with intelligent token calculation (3 tokens/second + 100 buffer)
+- **System Prompt Integration**: AI guidance for specialized transcription contexts with 2000 character validation
+- **Improved Generation**: Repetition penalty (1.1), length penalty (1.0), early stopping for quality
+- **API Parameter Fixes**: Resolved missing language parameter and Pydantic model validation errors
+
+### 📝 **Version 0.9 Status**
+- **Code Complete**: ✅ All production fixes implemented and tested
+- **Documentation Updated**: ✅ README.md, CHANGELOG.md, CLAUDE.md updated for v0.9
+- **Git Status**: ⏳ **PENDING UPLOAD** - Version 0.9 needs to be committed and pushed
+- **Ready for Release**: ✅ Production-ready code with comprehensive documentation
 
 ## Development Commands
 
@@ -169,6 +184,9 @@ class VoxtralConfig:
 - **Device Setting**: DEVICE=mps mandatory for Apple Silicon (set before any imports)
 - **Format Requirements**: Audio and format must be passed as lists to the API
 - **Dependencies**: Requires GitHub version of Transformers for latest Voxtral support
+- **Dynamic Token Limits**: Calculate based on audio duration (3 tokens/second + 100 buffer, max 2048)
+- **Generation Parameters**: Use repetition_penalty=1.1, length_penalty=1.0, early_stopping=True
+- **System Prompts**: Support 2000 character system prompts for specialized transcription contexts
 
 ## API Structure
 
@@ -383,20 +401,18 @@ cd frontend
 npm run lint && npm run build  # No separate type-check script
 ```
 
-### Container Debugging
+### Native Service Debugging
 ```bash
 # Check individual service logs
-docker-compose logs -f python-service
-docker-compose logs -f node-service
-docker-compose logs -f frontend
+tail -f backend/python-service/python_service.log
+tail -f backend/node-service/node_service.log
+tail -f frontend/frontend_service.log
 
-# Access service shells for debugging
-docker-compose exec python-service bash
-docker-compose exec node-service sh
-docker-compose exec redis redis-cli
+# Process monitoring
+ps aux | grep -E "(redis|uvicorn|node|vite)"
 
-# Resource monitoring
-docker stats
+# Service startup debugging
+cd installers && ./VoxFlow-Start.command  # Interactive debugging
 ```
 
 ### Model and Service Status

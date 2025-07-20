@@ -102,11 +102,16 @@ class AudioProcessor:
             # Extract chunk with overlap
             chunk_audio = audio_segment[start_ms:end_ms]
             
-            # Skip very short chunks
-            if len(chunk_audio) < 5000:  # Less than 5 seconds
+            # Skip very short chunks unless it's the final chunk (to preserve ending)
+            is_final_chunk = end_ms >= total_duration
+            if len(chunk_audio) < 5000 and not is_final_chunk:  # Less than 5 seconds
                 continue
-                
-            logger.info(f"Processing chunk {chunk_count}: {start_ms/1000:.1f}s - {end_ms/1000:.1f}s")
+            
+            # Process even very short final chunks to preserve the ending
+            if is_final_chunk and len(chunk_audio) < 1000:  # Less than 1 second
+                logger.info(f"Processing final chunk {chunk_count} (very short): {start_ms/1000:.1f}s - {end_ms/1000:.1f}s ({len(chunk_audio)}ms)")
+            else:
+                logger.info(f"Processing chunk {chunk_count}: {start_ms/1000:.1f}s - {end_ms/1000:.1f}s")
             
             # Process individual chunk
             chunk = await self._process_single_chunk(

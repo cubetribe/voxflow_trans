@@ -84,6 +84,7 @@ export const startTranscription = async (
       chunkSize: config.chunkSize,
       confidenceThreshold: config.confidenceThreshold,
       systemPrompt: config.systemPrompt,
+      language: config.language,
     };
     
     console.log('Sending transcription request:', body);

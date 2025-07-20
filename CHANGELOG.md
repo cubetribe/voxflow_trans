@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2025-01-20
+
+### 🎯 **CRITICAL PRODUCTION FIXES - Text Truncation Eliminated**
+
+#### 🐛 **Fixed - Major Text Truncation Issue**
+- **Dynamic Token Limits**: Implemented intelligent token calculation based on audio duration (3 tokens per second + 100 buffer)
+- **Root Cause**: `max_new_tokens=200` was severely limiting transcription length for longer audio files
+- **Solution**: Dynamic range from 150 to 2048 tokens based on audio duration with production logging
+- **Impact**: ✅ **Complete German transcriptions now work perfectly** - no more cut-off endings
+
+#### 🔧 **Enhanced Generation Parameters**
+- **Repetition Penalty**: Added 1.1 repetition penalty to improve text quality
+- **Length Penalty**: Implemented 1.0 length penalty for better completion
+- **Early Stopping**: Enabled early stopping for efficient generation
+- **Truncation Detection**: Production-grade warning system for quality assurance
+
+#### 🚀 **System Prompt Integration** 
+- **AI Guidance**: Added system prompt support for specialized transcription contexts
+- **Character Limit**: 2000 character limit with proper validation
+- **Dual Engine Support**: Consistent implementation across PyTorch and MLX backends
+- **Production Validation**: Comprehensive input sanitization and error handling
+
+### 🐛 **Fixed - API Integration Issues**
+- **Frontend API Bug**: Fixed missing `language` parameter in transcription requests
+- **Pydantic Model Error**: Removed duplicate `language` field causing validation failures
+- **TypeScript Compatibility**: Resolved `exactOptionalPropertyTypes` strict mode issues
+- **Parameter Handling**: Proper undefined value filtering for API calls
+
+### 🔧 **Technical Improvements**
+- **Voxtral Engine Enhancement**: Improved `apply_transcrition_request` API integration
+- **Audio Chunk Processing**: Enhanced final chunk preservation to maintain audio endings  
+- **Production Logging**: Comprehensive duration tracking and truncation warnings
+- **Error Handling**: Graceful degradation with detailed error messaging
+
+### 📊 **Performance Optimizations**
+- **Apple Silicon**: Native MPS optimization with Metal Performance Shaders
+- **Memory Management**: Stream-based processing for 2+ hour audio files
+- **Background Cleanup**: Intelligent temporary file management
+- **Concurrent Processing**: Configurable parallel chunk processing
+
+## [0.8.0] - 2025-01-15
+
 ### 🧠 MAJOR FEATURE - VoxFlow v0.7 System-Prompt UI Implementation (2025-07-20)
 
 ### 📅 **2025-07-20 14:30-15:00 CET** - System-Prompt UI Feature Implementation

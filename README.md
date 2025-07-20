@@ -1,57 +1,70 @@
-# 🎙️ VoxFlow - AI Voice Transcription
+# 🎙️ VoxFlow - AI Voice Transcription Platform
 
 <div align="center">
 
 ![VoxFlow Logo](https://via.placeholder.com/300x100/007AFF/FFFFFF?text=VoxFlow)
 
-**Next-generation voice transcription powered by Mistral's Voxtral model**
+**Production-ready voice transcription powered by Mistral's Voxtral-Mini-3B-2507 with native Apple Silicon optimization**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/Node.js-18.x-green.svg)](https://nodejs.org/)
-[![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-3178C6.svg)](https://typescriptlang.org/)
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5+-3178C6.svg)](https://typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB.svg)](https://reactjs.org/)
+[![Version](https://img.shields.io/badge/Version-0.9-brightgreen.svg)](https://github.com/your-repo/releases)
 
-[🚀 Quick Start](#-quick-start) • [📖 Documentation](#-documentation) • [🛠️ Development](#️-development) • [🤝 Contributing](#-contributing)
+[🚀 Quick Start](#-quick-start) • [📖 Documentation](#-documentation) • [🛠️ Development](#️-development) • [🆕 Version 0.9](#-version-09-highlights)
 
 </div>
 
-## ✨ Features
+## 🆕 Version 0.9 Highlights
 
-### 🎯 Core Transcription Capabilities
-- 🎙️ **Real-time Streaming** - Live audio transcription with WebSocket support
-- 📁 **Batch Processing** - Multi-file upload and processing with progress tracking
+### 🎯 **Critical Production Fixes**
+- **Dynamic Token Limits**: Eliminated text truncation for long audio files  
+- **System Prompt Integration**: AI guidance for specialized transcription contexts
+- **Improved Generation Parameters**: Repetition penalty, length penalty, early stopping
+- **Truncation Detection**: Production-grade logging for quality assurance
+- **Dual Engine Support**: Consistent behavior across PyTorch and MLX backends
+
+### 🚀 **Performance Breakthroughs**
+- **Apple Silicon Optimization**: Native MPS with Metal Performance Shaders
+- **Intelligent Chunking**: Preserves audio endings with smart overlap handling
+- **Memory Management**: Stream-based processing for 2+ hour files
+- **Background Cleanup**: Automatic temporary file management
+
+## ✨ Core Features
+
+### 🎯 **Production-Ready Transcription**
+- 🤖 **Mistral Voxtral-Mini-3B-2507** - Latest speech-to-text model with system prompts
 - ⏱️ **Large File Support** - Handle 2+ hour audio files with intelligent chunking
-- 🔄 **Smart Chunking** - 10-minute segments with 10-second overlap for seamless results
-- 📊 **Progress Tracking** - Real-time progress with cancellation support
-- 🎯 **High Accuracy** - Powered by Mistral's Voxtral model
+- 🔄 **Smart Processing** - 10-minute segments with 10-second overlap for seamless results
+- 📊 **Real-time Progress** - Granular chunk-level progress tracking with cancellation
+- 🎯 **High Accuracy** - Dynamic token limits prevent text truncation
 
-### 🚀 Performance & Optimization  
-- 🍎 **Apple Silicon Optimized** - MLX integration for M4/M3/M2/M1 chips
-- ⚡ **Memory Efficient** - Stream-based processing for large files
-- 🔧 **Automatic Cleanup** - Smart temporary file management
-- 📈 **Concurrent Processing** - Configurable parallel chunk processing
-- 🧠 **Voice Activity Detection** - Intelligent silence removal
-- 🎵 **Noise Reduction** - Advanced audio preprocessing
+### 🚀 **Apple Silicon Optimization**  
+- 🍎 **Native MPS Integration** - MLX framework for M4/M3/M2/M1 chips
+- ⚡ **Performance** - 10-20x faster than Docker on Apple Silicon
+- 🧠 **Neural Engine** - Metal Performance Shaders acceleration
+- 💾 **Memory Efficient** - Unified memory architecture utilization
 
-### 🌐 Format Support
-- **Input**: MP3, WAV, M4A, WEBM, OGG, FLAC
+### 🌐 **Comprehensive Format Support**
+- **Input**: MP3, WAV, M4A, WEBM, OGG, FLAC (up to 500MB, 48kHz)
 - **Output**: JSON, TXT, SRT, VTT with timestamps and confidence scores
-- **Languages**: Auto-detection with manual override support
-- **Quality**: Up to 48kHz sample rate processing
+- **Languages**: 9 languages including German with auto-detection
+- **Quality**: Production-grade audio preprocessing with noise reduction
 
-### 🎨 User Experience
-- 📱 **Responsive Design** - Works seamlessly on desktop and mobile  
-- 🌙 **Dark/Light Themes** - Apple-inspired aesthetic with glassmorphism
-- 📋 **Multi-file Selection** - Drag & drop with batch configuration
-- 📂 **Output Management** - Choose destination and format preferences
-- 🔔 **Real-time Notifications** - Progress updates and completion alerts
+### 🎨 **Modern User Experience**
+- 📱 **React 18.3** - Modern responsive design with TailwindCSS
+- 🌙 **System Prompt Editor** - AI guidance for specialized transcription
+- 📋 **Batch Processing** - Multi-file upload with configuration
+- 📂 **Output Management** - Flexible destination and format options
+- 🔔 **Real-time Updates** - WebSocket-based progress notifications
 
-### 🔒 Privacy & Security
-- 🏠 **Local Processing** - All transcription happens on your system
-- 🗑️ **Automatic Cleanup** - Temporary files cleaned after processing  
-- 🔐 **No Cloud Dependencies** - Complete privacy protection
-- 🛡️ **Secure File Handling** - Encrypted temporary storage
+### 🔒 **Privacy & Security**
+- 🏠 **100% Local Processing** - No cloud dependencies, complete privacy
+- 🗑️ **Automatic Cleanup** - Smart temporary file management
+- 🛡️ **Production Security** - Input validation, rate limiting, CORS protection
+- 📊 **Health Monitoring** - Comprehensive service status and metrics
 
 ## 🏗️ Architecture
 

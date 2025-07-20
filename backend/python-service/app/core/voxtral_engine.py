@@ -397,6 +397,14 @@ class VoxtralEngine:
             # Convert to MLX arrays
             input_features = mx.array(inputs.input_features.squeeze())
             
+            # Calculate dynamic token limit based on audio duration
+            audio_duration_seconds = len(audio) / self.settings.SAMPLE_RATE
+            # Conservative estimate: ~3 tokens per second of audio
+            estimated_tokens = max(int(audio_duration_seconds * 3), 50)  # Minimum 50 tokens
+            max_tokens = min(estimated_tokens + 100, 2048)  # Maximum 2048 tokens, add 100 token buffer
+            
+            logger.info(f"MLX Audio duration: {audio_duration_seconds:.1f}s, using max_tokens: {max_tokens}")
+            
             # Generate transcription with optimized prompt
             prompt = f"<|startoftranscript|><|{language or 'en'}|><|transcribe|>"
             if return_timestamps:
@@ -407,7 +415,7 @@ class VoxtralEngine:
                 self.mlx_model,
                 self.mlx_tokenizer,
                 prompt=prompt,
-                max_tokens=1000,
+                max_tokens=max_tokens,
                 temp=0.0,
             )
             
@@ -495,18 +503,38 @@ class VoxtralEngine:
             # Move to device
             inputs = {k: v.to(self.device) if torch.is_tensor(v) else v for k, v in result.items()}
             
+            # Calculate dynamic token limit based on audio duration
+            audio_duration_seconds = len(audio) / self.settings.SAMPLE_RATE
+            # Conservative estimate: ~3 tokens per second of audio (accounts for various speech rates)
+            # Add buffer for longer content and safety margin
+            estimated_tokens = max(int(audio_duration_seconds * 3), 50)  # Minimum 50 tokens
+            max_tokens = min(estimated_tokens + 100, 2048)  # Maximum 2048 tokens, add 100 token buffer
+            
+            logger.info(f"Audio duration: {audio_duration_seconds:.1f}s, using max_new_tokens: {max_tokens}")
+            
             # Generate transcription - use the actual model, not pipeline
             with torch.no_grad():
                 outputs = await asyncio.to_thread(
                     self.model.model.generate,  # Pipeline's underlying model
                     **inputs,
-                    max_new_tokens=200,
+                    max_new_tokens=max_tokens,
                     do_sample=False,
-                    pad_token_id=self.processor.tokenizer.eos_token_id
+                    pad_token_id=self.processor.tokenizer.eos_token_id,
+                    # Additional generation parameters for quality
+                    repetition_penalty=1.1,
+                    length_penalty=1.0,
+                    early_stopping=True
                 )
             
             # Decode transcription using the correct Voxtral API (same as test_voxtral_native.py)
             transcription = self.processor.decode(outputs[0], skip_special_tokens=True)
+            
+            # Check if transcription was truncated (production safety check)
+            output_length = outputs[0].shape[-1]
+            if output_length >= max_tokens - 10:  # If we're close to the limit
+                logger.warning(f"Transcription may be truncated - used {output_length}/{max_tokens} tokens for {audio_duration_seconds:.1f}s audio")
+                logger.warning("Consider increasing max_tokens or splitting audio into smaller chunks")
+            
             logger.info(f"Raw Voxtral transcription: {transcription}")
             
             # Clean up the transcription (remove language prefix if present)
