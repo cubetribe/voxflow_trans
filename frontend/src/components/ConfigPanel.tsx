@@ -151,6 +151,21 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, onChange }) => {
             <span className="text-white text-sm w-8">{config.confidenceThreshold.toFixed(1)}</span>
           </div>
         </div>
+
+        {/* Performance Mode - Placeholder for future features */}
+        <div className="opacity-60">
+          <label className="block text-sm font-medium text-gray-400 mb-2">
+            Performance Mode (Coming Soon)
+          </label>
+          <select
+            disabled
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-gray-500 cursor-not-allowed"
+          >
+            <option value="balanced">Balanced</option>
+            <option value="speed">Speed Optimized</option>
+            <option value="quality">Quality Optimized</option>
+          </select>
+        </div>
       </div>
       
       <div className="mt-6 pt-4 border-t border-white/10">

@@ -112,36 +112,53 @@ function App() {
       <Header isConnected={isConnected} />
       
       <main className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-          {/* Main Content */}
-          <div className="xl:col-span-3 space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-8">
+          {/* Left Column - Main Content (70%) */}
+          <div className="lg:col-span-7 voxflow-main-content">
+            {/* File Upload Area */}
             <HeroSection 
               onFilesAdded={handleFilesAdded} 
               onTranscriptionResult={handleTranscriptionResult}
               config={config} 
             />
             <FileManager files={files} onFileRemove={handleFileRemove} />
-          </div>
-          
-          {/* Sidebar */}
-          <div className="xl:col-span-1 space-y-6">
-            <StatusDashboard 
-              systemStatus={systemStatus} 
-              isLoading={statusLoading}
-              isConnected={isConnected}
-            />
-            <ConfigPanel config={config} onChange={handleConfigChange} />
+            
+            {/* AI Instructions - Full width of left column */}
             <SystemPromptPanel 
               onPromptChange={handleSystemPromptChange}
               onLanguageChange={handleLanguageChange}
             />
+            
+            {/* Transcription Output - Full width of left column */}
             <TranscriptionOutput 
               results={transcriptionResults}
               onClear={handleClearTranscriptions}
             />
           </div>
+          
+          {/* Right Column - Sidebar (30%) */}
+          <div className="lg:col-span-3 voxflow-sidebar">
+            {/* System Status */}
+            <StatusDashboard 
+              systemStatus={systemStatus} 
+              isLoading={statusLoading}
+              isConnected={isConnected}
+            />
+            
+            {/* Configuration Panel - Extended */}
+            <ConfigPanel config={config} onChange={handleConfigChange} />
+          </div>
         </div>
       </main>
+      
+      {/* Footer */}
+      <footer className="glass-morphism border-t border-white/10 sticky bottom-0 z-50">
+        <div className="container mx-auto px-4 py-4">
+          <div className="text-center text-gray-400 text-sm">
+            © Dennis Westermann @ aiEX Academy
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

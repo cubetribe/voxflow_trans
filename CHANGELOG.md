@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2025-01-20
+
+### 🎨 **UI/UX Redesign - Clean Professional Layout**
+
+#### 🖼️ **Frontend Layout Overhaul**
+- **2-Column Layout**: Restructured from 4-column XL-grid to clean 2-column design (70:30 ratio)
+- **Eliminated Duplication**: Removed redundant VoxFlow title from hero section for cleaner appearance
+- **Equal Column Heights**: Both left and right columns now start at exactly the same height
+- **Improved Spacing**: Consistent `.voxflow-main-content` and `.voxflow-sidebar` spacing classes
+
+#### 🧹 **Code Cleanup & Organization**
+- **Python Service Cleanup**: Removed 12 obsolete debug/test files (85% reduction)
+  - Deleted development artifacts: `create_test_audio.py`, `debug_voxtral.py`, etc.
+  - Removed duplicate files: `model_loader 2.py`, `voxtral_engine 2.py`, etc.
+  - Kept only production-relevant: `safe_voxtral_test.py`, `test_voxtral_native.py`
+- **Enhanced Reset Script**: Added comprehensive process termination to VoxFlow-Reset.command
+  - Graceful shutdown (SIGTERM → SIGKILL) for all VoxFlow services
+  - Port-based and pattern-based process detection
+  - Redis data preservation with `redis-cli shutdown`
+
+#### ⚙️ **Configuration Panel Enhancements**
+- **Future-Ready**: Added disabled "Performance Mode" placeholder for upcoming features
+- **Extended Options**: Maintained all existing config options with improved layout
+- **Better Accessibility**: Clearer disabled state styling for upcoming features
+
+#### 🏗️ **Production-Ready CSS Architecture**
+- **Utility Classes**: Added `.voxflow-panel`, `.voxflow-footer` for consistent styling
+- **Unified Spacing**: Standardized `space-y-8` for main content, `space-y-6` for sidebar
+- **Footer Integration**: Added professional copyright footer spanning full width
+
+### 🎯 **Layout Structure**
+```
+|------------ VoxFlow (Header - Single Title) ------------|
+|                                                          |
+|---- LEFT COLUMN (70%) -----|---- RIGHT COLUMN (30%) ----|
+| File Upload (Drag & Drop)  | System Status              |
+| AI Instructions            | Configuration (Extended)    |
+| Transcription Output       |                            |
+|                           |                            |
+|------------- Footer © Dennis Westermann ---------------|
+```
+
+### ✅ **Success Criteria Achieved**
+- ✅ Clean, professional 2-column layout
+- ✅ No redundant UI elements
+- ✅ Equal column heights and consistent spacing
+- ✅ Production-ready code organization (CLAUDE.md compliant)
+- ✅ Enhanced reset functionality for development workflow
+
 ## [0.9.0] - 2025-01-20
 
 ### 🎯 **CRITICAL PRODUCTION FIXES - Text Truncation Eliminated**

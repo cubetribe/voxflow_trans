@@ -4,7 +4,7 @@
 
 @layer components {
   .glass-morphism {
-    @apply bg-white/10 backdrop-blur-lg border border-white/20;
+    @apply bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl;
   }
 
   .status-indicator-green {
@@ -22,6 +22,32 @@
   .slider::-moz-range-thumb {
     @apply w-5 h-5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full cursor-pointer border-0;
   }
+
+  /* Consistent panel styling */
+  .voxflow-panel {
+    @apply glass-morphism p-6 space-y-6;
+  }
+
+  /* Unified spacing for main content */
+  .voxflow-main-content {
+    @apply space-y-8;
+  }
+
+  /* Sidebar consistent spacing */
+  .voxflow-sidebar {
+    @apply space-y-6;
+  }
+
+  /* Consistent panel headers */
+  .voxflow-panel-header {
+    @apply flex items-center space-x-2 mb-6;
+  }
+
+  .voxflow-panel-title {
+    @apply text-lg font-semibold text-white;
+  }
+
+  /* Footer styling - removed since using glass-morphism directly */
 }
 
 /* Custom scrollbar */

@@ -257,6 +257,141 @@ EOF
     echo "   📋 Backup Info: $BACKUP_DIR/BACKUP_INFO.txt"
 fi
 
+# RESET PHASE 0: PROCESS TERMINATION (Production-Ready)
+echo ""
+echo "🛑 Phase 0: VoxFlow Service Termination..."
+
+# Production-ready process detection and termination
+terminate_processes() {
+    local service_name="$1"
+    local port="$2"
+    local process_pattern="$3"
+    
+    echo "   🔍 Checking $service_name (Port $port)..."
+    
+    # Method 1: Port-based termination (most reliable)
+    if command -v lsof &> /dev/null; then
+        local pids=$(lsof -ti:$port 2>/dev/null || true)
+        if [ -n "$pids" ]; then
+            echo "   ⚠️  $service_name läuft auf Port $port (PIDs: $pids)"
+            echo "   🛑 Graceful shutdown attempt..."
+            
+            # Graceful termination first
+            for pid in $pids; do
+                if kill -TERM "$pid" 2>/dev/null; then
+                    echo "   ✅ SIGTERM sent to PID $pid"
+                fi
+            done
+            
+            # Wait for graceful shutdown
+            sleep 3
+            
+            # Force termination if still running
+            local remaining_pids=$(lsof -ti:$port 2>/dev/null || true)
+            if [ -n "$remaining_pids" ]; then
+                echo "   ⚡ Force termination required..."
+                for pid in $remaining_pids; do
+                    if kill -KILL "$pid" 2>/dev/null; then
+                        echo "   ✅ SIGKILL sent to PID $pid"
+                    fi
+                done
+                sleep 1
+            fi
+            
+            log_info "Terminated $service_name processes on port $port"
+        else
+            echo "   ✅ $service_name nicht aktiv"
+        fi
+    fi
+    
+    # Method 2: Pattern-based termination (backup)
+    if [ -n "$process_pattern" ]; then
+        local pattern_pids=$(pgrep -f "$process_pattern" 2>/dev/null || true)
+        if [ -n "$pattern_pids" ]; then
+            echo "   🔍 Pattern-basierte Erkennung: $process_pattern"
+            for pid in $pattern_pids; do
+                if kill -TERM "$pid" 2>/dev/null; then
+                    echo "   ✅ SIGTERM sent to pattern PID $pid"
+                fi
+            done
+            sleep 2
+            
+            # Force kill remaining pattern matches
+            local remaining_pattern_pids=$(pgrep -f "$process_pattern" 2>/dev/null || true)
+            if [ -n "$remaining_pattern_pids" ]; then
+                for pid in $remaining_pattern_pids; do
+                    if kill -KILL "$pid" 2>/dev/null; then
+                        echo "   ⚡ SIGKILL sent to pattern PID $pid"
+                    fi
+                done
+            fi
+            
+            log_info "Terminated $service_name processes by pattern: $process_pattern"
+        fi
+    fi
+}
+
+# Comprehensive VoxFlow service termination
+echo "   🎯 Terminating all VoxFlow services..."
+
+# Python Voxtral Service (Port 8000)
+terminate_processes "Python Voxtral Service" "8000" "uvicorn.*app.main:app"
+
+# Node.js Gateway (Port 3000)  
+terminate_processes "Node.js Gateway" "3000" "node.*backend/node-service"
+
+# React Frontend (Port 5173)
+terminate_processes "React Frontend" "5173" "vite.*frontend"
+
+# Redis (Port 6379) - Special handling
+echo "   🔍 Checking Redis (Port 6379)..."
+redis_pids=$(lsof -ti:6379 2>/dev/null || true)
+if [ -n "$redis_pids" ]; then
+    echo "   ⚠️  Redis läuft auf Port 6379"
+    echo "   🛑 Redis shutdown (data preservation)..."
+    
+    # Try redis-cli shutdown first (preserves data)
+    if command -v redis-cli &> /dev/null; then
+        redis-cli shutdown 2>/dev/null || true
+        sleep 2
+    fi
+    
+    # Force termination if still running
+    remaining_redis=$(lsof -ti:6379 2>/dev/null || true)
+    if [ -n "$remaining_redis" ]; then
+        echo "   ⚡ Force Redis termination..."
+        for pid in $remaining_redis; do
+            kill -KILL "$pid" 2>/dev/null || true
+        done
+    fi
+    
+    log_info "Terminated Redis service"
+    echo "   ✅ Redis gestoppt"
+else
+    echo "   ✅ Redis nicht aktiv"
+fi
+
+# Additional cleanup for stubborn processes
+echo "   🧹 Additional VoxFlow process cleanup..."
+pkill -f "voxflow" 2>/dev/null || true
+pkill -f "voxtral" 2>/dev/null || true
+
+# Verify all services stopped
+echo "   ✅ Service termination completed"
+sleep 1
+
+# Final verification
+echo "   🔍 Final port verification..."
+for port in 8000 3000 5173 6379; do
+    if lsof -ti:$port &>/dev/null; then
+        echo "   ⚠️  Warning: Port $port still occupied"
+        log_info "Warning: Port $port still occupied after termination"
+    fi
+done
+
+echo "   ✅ Process termination phase completed"
+log_info "Completed comprehensive process termination"
+
 # RESET PHASE 1: PYTHON ENVIRONMENT
 echo ""
 echo "🐍 Phase 1: Python Environment Reset..."

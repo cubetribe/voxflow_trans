@@ -151,15 +151,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onFilesAdded, onTranscription
 
   return (
     <section className="text-center">
-      <div className="mb-8">
-        <h1 className="text-5xl md:text-6xl font-bold gradient-text mb-4">
-          VoxFlow
-        </h1>
-        <p className="text-xl text-gray-300 mb-8">
-          Professional AI Voice Transcription
-        </p>
-      </div>
-
       <div
         className={`upload-zone glass-morphism p-8 rounded-xl border-2 border-dashed transition-all duration-300 ${
           isDragActive 
