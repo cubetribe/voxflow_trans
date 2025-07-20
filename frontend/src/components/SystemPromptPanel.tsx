@@ -4,14 +4,19 @@ import toast from 'react-hot-toast';
 
 interface SystemPromptPanelProps {
   onPromptChange: (prompt: string) => void;
+  onLanguageChange?: (language: string) => void;
 }
 
-const DEFAULT_PROMPT = "You are a professional transcription assistant. Transcribe the audio exactly as spoken. Output only the transcription.";
+const DEFAULT_PROMPT = "Sie sind ein professioneller Transkriptions-Assistent. Transkribieren Sie das Audio exakt wie gesprochen in der ORIGINAL-SPRACHE. Falls Deutsch gesprochen wird, geben Sie die Transkription auf DEUTSCH aus. Achten Sie auf deutsche Grammatik, Umlaute (ä, ö, ü, ß) und regionale Dialekte. Ausgabe: Nur die Transkription in Originalsprache.";
 
 const PROMPT_PRESETS = [
   {
     name: "Standard Transcription",
     prompt: "You are a professional transcription assistant. Transcribe the audio exactly as spoken. Output only the transcription."
+  },
+  {
+    name: "German Transcription",
+    prompt: "Sie sind ein professioneller Transkriptions-Assistent. Transkribieren Sie das Audio exakt wie gesprochen in der ORIGINAL-SPRACHE. Falls Deutsch gesprochen wird, geben Sie die Transkription auf DEUTSCH aus. Achten Sie auf deutsche Grammatik, Umlaute (ä, ö, ü, ß) und regionale Dialekte. Ausgabe: Nur die Transkription in Originalsprache."
   },
   {
     name: "Meeting Summary",
@@ -27,15 +32,30 @@ const PROMPT_PRESETS = [
   }
 ];
 
-const SystemPromptPanel: React.FC<SystemPromptPanelProps> = ({ onPromptChange }) => {
+const SUPPORTED_LANGUAGES = [
+  { value: "auto", label: "🌐 Auto-Detect" },
+  { value: "de", label: "🇩🇪 Deutsch" },
+  { value: "en", label: "🇺🇸 English" },
+  { value: "es", label: "🇪🇸 Español" },
+  { value: "fr", label: "🇫🇷 Français" },
+  { value: "it", label: "🇮🇹 Italiano" },
+  { value: "pt", label: "🇵🇹 Português" },
+  { value: "nl", label: "🇳🇱 Nederlands" },
+  { value: "hi", label: "🇮🇳 हिन्दी" }
+];
+
+const SystemPromptPanel: React.FC<SystemPromptPanelProps> = ({ onPromptChange, onLanguageChange }) => {
   const [prompt, setPrompt] = useState<string>(DEFAULT_PROMPT);
-  const [selectedPreset, setSelectedPreset] = useState<string>('Standard Transcription');
+  const [selectedPreset, setSelectedPreset] = useState<string>('German Transcription');
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('de');
   const [characterCount, setCharacterCount] = useState<number>(0);
 
-  // Load saved prompt from localStorage on component mount
+  // Load saved settings from localStorage on component mount
   useEffect(() => {
     try {
       const savedPrompt = localStorage.getItem('voxflow-system-prompt');
+      const savedLanguage = localStorage.getItem('voxflow-language');
+      
       if (savedPrompt && savedPrompt.trim()) {
         setPrompt(savedPrompt);
         setCharacterCount(savedPrompt.length);
@@ -45,11 +65,21 @@ const SystemPromptPanel: React.FC<SystemPromptPanelProps> = ({ onPromptChange })
         setCharacterCount(DEFAULT_PROMPT.length);
         onPromptChange(DEFAULT_PROMPT);
       }
+      
+      if (savedLanguage) {
+        setSelectedLanguage(savedLanguage);
+        onLanguageChange?.(savedLanguage);
+      } else {
+        setSelectedLanguage('de');
+        onLanguageChange?.('de');
+      }
     } catch (error) {
-      console.error('Failed to load saved prompt:', error);
+      console.error('Failed to load saved settings:', error);
       setPrompt(DEFAULT_PROMPT);
       setCharacterCount(DEFAULT_PROMPT.length);
+      setSelectedLanguage('de');
       onPromptChange(DEFAULT_PROMPT);
+      onLanguageChange?.('de');
     }
   }, []); // Empty dependency array - only run on mount
 
@@ -76,6 +106,19 @@ const SystemPromptPanel: React.FC<SystemPromptPanelProps> = ({ onPromptChange })
     }
   };
 
+  const handleLanguageChange = (language: string) => {
+    setSelectedLanguage(language);
+    onLanguageChange?.(language);
+    
+    try {
+      localStorage.setItem('voxflow-language', language);
+      const languageLabel = SUPPORTED_LANGUAGES.find(l => l.value === language)?.label || language;
+      toast.success(`Language set to ${languageLabel}`);
+    } catch (error) {
+      console.error('Failed to save language setting:', error);
+    }
+  };
+
   const handleSavePrompt = () => {
     try {
       if (!prompt.trim()) {
@@ -94,14 +137,17 @@ const SystemPromptPanel: React.FC<SystemPromptPanelProps> = ({ onPromptChange })
   const handleResetPrompt = () => {
     setPrompt(DEFAULT_PROMPT);
     setCharacterCount(DEFAULT_PROMPT.length);
-    setSelectedPreset('Standard Transcription');
+    setSelectedPreset('German Transcription');
+    setSelectedLanguage('de');
     onPromptChange(DEFAULT_PROMPT);
+    onLanguageChange?.('de');
     
     try {
       localStorage.setItem('voxflow-system-prompt', DEFAULT_PROMPT);
-      toast.success('System prompt reset to default');
+      localStorage.setItem('voxflow-language', 'de');
+      toast.success('Settings reset to German defaults');
     } catch (error) {
-      console.error('Failed to save reset prompt:', error);
+      console.error('Failed to save reset settings:', error);
     }
   };
 
@@ -113,24 +159,45 @@ const SystemPromptPanel: React.FC<SystemPromptPanelProps> = ({ onPromptChange })
       </div>
       
       <div className="space-y-6">
-        {/* Preset Selection */}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            <BookOpen className="w-4 h-4 inline mr-1" />
-            Prompt Presets
-          </label>
-          <select
-            value={selectedPreset}
-            onChange={(e) => handlePresetChange(e.target.value)}
-            className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-          >
-            {PROMPT_PRESETS.map((preset) => (
-              <option key={preset.name} value={preset.name}>
-                {preset.name}
-              </option>
-            ))}
-            <option value="Custom">Custom</option>
-          </select>
+        {/* Preset and Language Selection */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Preset Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              <BookOpen className="w-4 h-4 inline mr-1" />
+              Prompt Presets
+            </label>
+            <select
+              value={selectedPreset}
+              onChange={(e) => handlePresetChange(e.target.value)}
+              className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              {PROMPT_PRESETS.map((preset) => (
+                <option key={preset.name} value={preset.name}>
+                  {preset.name}
+                </option>
+              ))}
+              <option value="Custom">Custom</option>
+            </select>
+          </div>
+
+          {/* Language Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              🌍 Language
+            </label>
+            <select
+              value={selectedLanguage}
+              onChange={(e) => handleLanguageChange(e.target.value)}
+              className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              {SUPPORTED_LANGUAGES.map((language) => (
+                <option key={language.value} value={language.value}>
+                  {language.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* System Prompt Textarea */}

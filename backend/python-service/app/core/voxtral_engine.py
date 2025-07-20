@@ -457,18 +457,36 @@ class VoxtralEngine:
             effective_prompt = system_prompt or "You are a professional transcription assistant. Transcribe the audio exactly as spoken. Output only the transcription."
             logger.info(f"Using system prompt: {effective_prompt[:100]}...")
             
-            # Voxtral TRANSCRIPTION MODE - Testing minimal parameters first
-            logger.info("Testing Voxtral with temperature=0.0 for transcription mode")
+            # Voxtral TRANSCRIPTION MODE with dynamic language support
+            # Map frontend language codes to Voxtral format
+            voxtral_language = None
+            if language:
+                if language == "auto":
+                    voxtral_language = None  # Let Voxtral auto-detect
+                else:
+                    voxtral_language = language  # Use specified language (de, en, es, etc.)
+            
+            logger.info(f"Using language setting: {voxtral_language or 'auto-detect'}")
+            logger.info("Using Voxtral with temperature=0.0 for transcription mode")
+            
+            # Build parameters dynamically
+            transcription_params = {
+                "audio": [audio],
+                "format": ["wav"],
+                "temperature": 0.0,
+                "model_id": self.settings.MODEL_NAME,
+                "sampling_rate": self.settings.SAMPLE_RATE,
+                "return_tensors": "pt",
+                "system_prompt": effective_prompt
+            }
+            
+            # Only add language if explicitly set (None = auto-detect)
+            if voxtral_language is not None:
+                transcription_params["language"] = voxtral_language
+            
             result = await asyncio.to_thread(
                 self.processor.apply_transcrition_request,
-                audio=[audio],  # Audio as list
-                format=["wav"],  # Format as list matching audio
-                temperature=0.0,  # CRITICAL: 0.0 = Transcription mode
-                language=language or "en",  # Keep language explicit for now
-                model_id=self.settings.MODEL_NAME,
-                sampling_rate=self.settings.SAMPLE_RATE,
-                return_tensors="pt",
-                system_prompt=effective_prompt  # Add system prompt support
+                **transcription_params
             )
             
             logger.info(f"Voxtral processor result type: {type(result)}")
@@ -951,7 +969,7 @@ class VoxtralEngine:
             # Get transcription using our Voxtral-compatible method
             transcription_result = await self._transcribe_audio_internal(
                 chunk.audio_data,
-                language="en",  # Use default language
+                language=getattr(request, 'language', None),  # Use request language setting
                 return_timestamps=request.include_timestamps,
                 return_confidence=True,
                 system_prompt=getattr(request, 'system_prompt', None),

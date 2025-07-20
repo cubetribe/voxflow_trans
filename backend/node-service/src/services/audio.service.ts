@@ -276,6 +276,11 @@ export class AudioService {
       if (options.systemPrompt) {
         formData.append('system_prompt', options.systemPrompt);
       }
+      
+      // Add language if provided
+      if (options.language) {
+        formData.append('language', options.language);
+      }
 
       // Send to Python service
       const response = await axios.post(

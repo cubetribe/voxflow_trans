@@ -19,7 +19,8 @@ function App() {
     includeTimestamps: true,
     chunkSize: 30,
     confidenceThreshold: 0.7,
-    systemPrompt: "You are a professional transcription assistant. Transcribe the audio exactly as spoken. Output only the transcription."
+    systemPrompt: "Sie sind ein professioneller Transkriptions-Assistent. Transkribieren Sie das Audio exakt wie gesprochen in der ORIGINAL-SPRACHE. Falls Deutsch gesprochen wird, geben Sie die Transkription auf DEUTSCH aus. Achten Sie auf deutsche Grammatik, Umlaute (ä, ö, ü, ß) und regionale Dialekte. Ausgabe: Nur die Transkription in Originalsprache.",
+    language: 'de'
   });
   const [transcriptionResults, setTranscriptionResults] = useState<TranscriptionResult[]>([]);
   
@@ -83,6 +84,10 @@ function App() {
     setConfig(prev => ({ ...prev, systemPrompt: prompt }));
   };
 
+  const handleLanguageChange = (language: string) => {
+    setConfig(prev => ({ ...prev, language }));
+  };
+
   const handleClearTranscriptions = () => {
     setTranscriptionResults([]);
   };
@@ -126,7 +131,10 @@ function App() {
               isConnected={isConnected}
             />
             <ConfigPanel config={config} onChange={handleConfigChange} />
-            <SystemPromptPanel onPromptChange={handleSystemPromptChange} />
+            <SystemPromptPanel 
+              onPromptChange={handleSystemPromptChange}
+              onLanguageChange={handleLanguageChange}
+            />
             <TranscriptionOutput 
               results={transcriptionResults}
               onClear={handleClearTranscriptions}

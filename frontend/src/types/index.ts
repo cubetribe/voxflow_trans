@@ -48,6 +48,7 @@ export interface TranscriptionConfig {
   chunkSize: number;
   confidenceThreshold: number;
   systemPrompt?: string;
+  language?: string;
 }
 
 export interface ProgressData {
