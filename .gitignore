@@ -246,4 +246,4 @@ $RECYCLE.BIN/
 *.msi
 *.msm
 *.msp
-*.lnk
+*.lnk_Backups_local/
