@@ -31,7 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### 🔨 Technical Improvements
 - **Fixed TypeScript Build Error**: Resolved `exactOptionalPropertyTypes` compatibility issue with proper undefined value filtering
-- **Updated Dependencies**: Upgraded supertest (6.3.4 → 7.1.4), ESLint (8.56.0 → 9.17.0), TypeScript ESLint plugins
+- **Updated Dependencies**: Upgraded ESLint (8.56.0 → 9.17.0), TypeScript ESLint plugins to latest stable versions
+- **Fixed supertest Version Conflict**: Corrected supertest@6.3.4 + @types/supertest@6.0.3 (compatible combination)
 - **Removed Deprecated Types**: Eliminated @types/joi (joi provides own types)
 - **Documentation Updates**: Updated CLAUDE.md to reflect current frontend structure and Voxtral implementation details
 
