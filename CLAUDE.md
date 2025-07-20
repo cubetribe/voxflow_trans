@@ -73,20 +73,17 @@ flake8 .                # Lint code
 mypy .                  # Type checking
 ```
 
-### Frontend Development (Current State: Active in frontend_new/project/)
-**NOTE: The frontend is actively developed in `frontend_new/project/` - legacy frontend is backed up**
+### Frontend Development (Current State: Active in frontend/)
+**NOTE: The frontend is actively developed in `frontend/` - this is the current production location**
 
 ```bash
 # Active frontend (production-ready)
-cd frontend_new/project
+cd frontend
 npm install
 npm run dev        # Development server (Vite)
 npm run build      # Production build
 npm run lint       # ESLint checking
-npm run type-check # TypeScript checking
-
-# Legacy frontend (backed up in frontend/src_backup_20250719_165420/)
-# Use only for reference - DO NOT develop here
+# Note: No separate type-check script - types are checked during build
 ```
 
 ### Full Stack Development
@@ -101,8 +98,7 @@ cd backend/python-service && uvicorn app.main:app --reload --port 8000
 # Terminal 3: Node.js Gateway
 cd backend/node-service && npm run dev
 
-# Terminal 4: Frontend (choose active version)
-cd frontend_new/project && npm run dev  # OR
+# Terminal 4: Frontend
 cd frontend && npm run dev
 ```
 
@@ -110,23 +106,19 @@ cd frontend && npm run dev
 The project includes production-ready launcher scripts:
 
 ```bash
-# RECOMMENDED: Enhanced startup experience
-./VoxFlow-Start.command     # Interactive startup with debug mode option
-./start-dev.sh             # Command-line alternative
+# RECOMMENDED: Professional two-step installation system
+cd installers && ./VoxFlow-Install.command   # One-time installation
+cd installers && ./VoxFlow-Start.command     # Ultra-fast daily startup
 
-# Features of VoxFlow-Start.command:
-# - Interactive VoxFlow introduction
-# - Optional debug mode with system info
-# - Automatic directory validation  
-# - Browser auto-launch
-# - Service management menu (logs, status, restart)
+# Alternative manual startup
+./start-dev.sh             # Direct command-line startup
 
-# Legacy scripts (REMOVED for safety):
-# - VoxFlow.command, VoxFlow-Local.command, VoxFlow-Debug.command
-# - All removed due to system crash issues
-
-# Redis installation (one-time setup)
-./install-redis.command    # Automated Redis installation via Homebrew
+# Features of installer system:
+# - VoxFlow-Install.command: Complete dependency installation and validation
+# - VoxFlow-Start.command: Instant startup for daily development
+# - VoxFlow-Reset.command: Clean slate reset for troubleshooting
+# - Comprehensive system validation and error handling
+# - Creates .installation_complete marker for fast subsequent startups
 ```
 
 ## Architecture
@@ -135,12 +127,11 @@ The project includes production-ready launcher scripts:
 - **Node.js Gateway**: Express.js with TypeScript, Socket.io for real-time, Multer for uploads, Bull for job queue, Redis for caching, SQLite for metadata
 - **Python Service**: FastAPI, vLLM/Hugging Face Transformers, MLX for Apple Silicon optimization, Pydantic validation, asyncio, FFmpeg integration
 
-### Frontend Stack (Updated)
-- **Core**: React 19.1 with TypeScript 5.8+, Vite 7.0, npm
-- **UI**: TailwindCSS 4.1, Framer Motion 12.23, Radix UI, Lucide React 0.525
-- **Audio**: WaveSurfer.js 7.10, Web Audio API
-- **State**: Zustand 5.0, Socket.io-client 4.8, TanStack Query 5.83, Axios 1.10
-- **Testing**: Vitest 3.2, Playwright 1.54, Testing Library 16.3
+### Frontend Stack (Current)
+- **Core**: React 18.3 with TypeScript 5.5+, Vite 5.4, npm
+- **UI**: TailwindCSS 3.4, Lucide React 0.344
+- **Real-time**: Socket.io-client 4.8, React Hot Toast 2.5
+- **Build Tools**: Vite 5.4, ESLint 9.9, Autoprefixer
 
 ### Data Flow
 ```
@@ -171,6 +162,13 @@ class VoxtralConfig:
 4. **Transcription** (concurrent chunk processing with progress tracking)
 5. **Post-processing** (segment merging, timestamp adjustment, confidence scoring)
 6. **Cleanup** (automatic temporary file removal)
+
+### Critical Voxtral Implementation Details
+- **Model API**: Uses `VoxtralForConditionalGeneration` from Transformers
+- **Required API**: `processor.apply_transcrition_request(audio, format)` - note the typo in "transcrition"
+- **Device Setting**: DEVICE=mps mandatory for Apple Silicon (set before any imports)
+- **Format Requirements**: Audio and format must be passed as lists to the API
+- **Dependencies**: Requires GitHub version of Transformers for latest Voxtral support
 
 ## API Structure
 
@@ -271,10 +269,9 @@ VITE_CHUNK_SIZE=32
 ## Current Project State
 
 ### Frontend Status
-- **Active Frontend**: Production-ready React app in `frontend/` (migrated from frontend_new/project/)
-- **Legacy Frontend**: Complete React app backed up in `frontend/src_backup_20250719_165420/`
+- **Active Frontend**: Production-ready React app in `frontend/` with minimal dependencies
 - **Native Development**: No Docker - direct Vite dev server on port 5173
-- **Path Migration**: All scripts and configs updated for native frontend/ location
+- **Simplified Stack**: React 18.3, TailwindCSS 3.4, Socket.io-client, minimal UI dependencies
 
 ### Backend Status
 - **Node.js Service**: Production-ready with comprehensive API endpoints on port 3000
@@ -382,7 +379,7 @@ npm run lint && npm run type-check && npm test
 cd backend/python-service  
 black . && isort . && flake8 . && mypy . && pytest
 
-cd frontend_new/project
+cd frontend
 npm run lint && npm run build  # No separate type-check script
 ```
 
@@ -419,9 +416,9 @@ curl http://localhost:8000/config/cleanup/stats
 # Service-specific logs
 backend/node-service/node_service.log
 backend/python-service/python_service.log
-frontend_new/project/frontend_service.log
+frontend/frontend_service.log
 
-# Application logs within containers
+# Application logs
 backend/node-service/logs/
 backend/python-service/logs/
 ```

@@ -449,14 +449,16 @@ class VoxtralEngine:
         try:
             logger.info("Using Voxtral apply_transcrition_request API")
             
-            # Voxtral requires specific API call with apply_transcrition_request
+            # Voxtral TRANSCRIPTION MODE - Testing minimal parameters first
+            logger.info("Testing Voxtral with temperature=0.0 for transcription mode")
             result = await asyncio.to_thread(
                 self.processor.apply_transcrition_request,
-                language=language or "en",
                 audio=[audio],  # Audio as list
+                format=["wav"],  # Format as list matching audio
+                temperature=0.0,  # CRITICAL: 0.0 = Transcription mode
+                language=language or "en",  # Keep language explicit for now
                 model_id=self.settings.MODEL_NAME,
                 sampling_rate=self.settings.SAMPLE_RATE,
-                format=["wav"],  # Format as list matching audio
                 return_tensors="pt"
             )
             
