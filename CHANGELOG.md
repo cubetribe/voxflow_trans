@@ -7,6 +7,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🚀 MAJOR UPDATE - VoxFlow v0.6 Native Development Architecture (2025-07-20)
+
+### 📅 **2025-07-20 08:30-08:45 CET** - Ultra-Clean Project Restructure
+#### 🗑️ Removed - Docker Dependencies & Legacy Files
+- **Deleted all Docker configurations**: docker-compose.yml, docker-compose.local.yml, DOCKER_SETUP.md
+- **Cleaned frontend structure**: Removed frontend/, frontend_OLD_NOT_USE/, consolidated frontend_new/project/ → frontend/
+- **Documentation cleanup**: Removed DEVELOPMENT_RULES.md, CLEAN-START-DOCUMENTATION.md, INTERNAL_TESTING.md, README-LAUNCHER.md, DEVELOPMENT_SUMMARY.md
+- **Debug scripts cleanup**: Removed all test_voxtral_*.py, debug_*.py, create_test_audio.py files
+- **Duplicate files**: Removed "backend/node-service/src/services/audio.service 2.ts"
+
+#### ✅ **VoxFlow v0.5 Backup Created**
+- **Complete source backup**: All essential files backed up to VoxFlow-v0.5-backup/ (1.1MB)
+- **Excluded from backup**: node_modules/, dist/, build/, venv/, __pycache__/, .git/, logs/
+- **Backup contents**: Source code, configs, documentation, scripts (no build artifacts)
+
+#### 🏗️ **New Ultra-Clean Structure**
+```
+VoxFlow/
+├── backend/
+│   ├── node-service/    # Node.js API Gateway
+│   └── python-service/  # Voxtral Service
+├── frontend/            # React App (consolidated)
+├── CLAUDE.md           # Project instructions
+├── README.md           # Main documentation
+└── start-dev.sh        # Native development startup
+```
+
+### 📅 **2025-07-20 08:45-09:15 CET** - Native Development Startup System
+#### 🚀 Added - Complete Native start-dev.sh Rewrite
+- **Replaced Docker workflow** with native process management
+- **PID-based tracking**: All services tracked with process IDs for clean shutdown
+- **Graceful cleanup function**: Automatic service termination on Ctrl+C or script exit
+- **Dependency management**: Auto-installation of npm and pip dependencies
+- **Environment file creation**: Native localhost URLs (not container names)
+
+#### 🔧 **Native Service Architecture**
+1. **Redis Server**: Native daemon on port 6379
+2. **Python Voxtral Service**: uvicorn with venv on port 8000  
+3. **Node.js API Gateway**: npm run dev on port 3000
+4. **React Frontend**: Vite dev server on port 5173
+
+#### ⚡ **Enhanced Features**
+- **Interactive management menu**: Live logs, status checks, process monitoring
+- **Debug mode**: Detailed system information and verbose logging
+- **Health monitoring**: Native service availability checks
+- **Auto browser launch**: Seamless development experience
+- **Hot reload**: All services support live file watching
+
+#### 🔄 **Environment Updates**
+- **Redis URLs**: `redis://localhost:6379` (not Docker container)
+- **Service URLs**: `http://localhost:*` (not container networking)
+- **Frontend path**: `frontend/` (not `frontend_new/project/`)
+- **Native dependency checks**: Node.js, Python, Redis installation verification
+
+#### 📊 **Service Management Features**
+- **Process tracking**: Real-time PID monitoring
+- **Log aggregation**: Centralized service logs
+- **Status dashboard**: Quick health overview
+- **Interactive controls**: Start/stop/restart individual services
+
+### 📅 **2025-07-20 09:15 CET** - Git Repository Update
+#### 🔄 **Repository State**
+- **Commit**: `33f053c feat: Ultra-clean v0.6 structure - native development only`
+- **Push successful**: After resolving large deletion push issues with increased git buffer
+- **Backup exclusion**: Added `_Backups_local/` to .gitignore
+
+---
+
 ### 🚀 MAJOR UPDATE - Enhanced Startup Experience & Docker Fixes (2025-07-19)
 
 ### 🎯 Added - Production-Ready Startup System

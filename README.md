@@ -89,11 +89,11 @@ graph TB
 - **WaveSurfer.js** for audio visualization
 - **Zustand** for state management
 
-## 🚀 Installation Methods
+## 🚀 Quick Start
 
-### 🍎 **Native Installation (Recommended for Apple Silicon)**
+### 🍎 **One-Click Native Development (Recommended)**
 
-**Optimized for Apple Silicon M1/M2/M3/M4 with full Metal Performance Shaders (MPS) support**
+**Ultra-fast startup with native Apple Silicon optimization**
 
 #### ⚡ Performance Benefits
 - **10-20x faster transcription** on Apple Silicon vs CPU
@@ -106,181 +106,267 @@ graph TB
 - **macOS 14+** with Apple Silicon (M1/M2/M3/M4)
 - **Python 3.11 or 3.12** (recommended)
 - **Node.js 18+** 
+- **Redis** (auto-installed if missing)
 - **16GB+ RAM** recommended for large files
 
-#### Quick Native Setup
+#### 🚀 **Ultra-Fast Setup (30 seconds)**
 ```bash
 # 1. Clone repository
 git clone https://github.com/cubetribe/voxflow_trans.git
 cd voxflow_trans
 
-# 2. Python Service (Terminal 1)
-cd backend/python-service
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-DEVICE=mps python -m uvicorn app.main:app --reload --port 8000
-
-# 3. Node.js Gateway (Terminal 2)  
-cd backend/node-service
-npm install
-npm run dev
-
-# 4. Frontend (Terminal 3)
-cd frontend_new/project
-npm install  
-npm run dev
-
-# 5. Optional: Redis for caching (Terminal 4)
-redis-server
+# 2. One-command startup
+./start-dev.sh
 ```
 
-#### Access Points
-- **Frontend**: http://localhost:5173
-- **API Gateway**: http://localhost:3000  
-- **Python Service**: http://localhost:8000
+**That's it!** 🎉 VoxFlow automatically:
+- ✅ Checks and installs dependencies  
+- ✅ Creates Python virtual environment
+- ✅ Installs npm packages
+- ✅ Starts all services with health checks
+- ✅ Opens browser to http://localhost:5173
 
-#### ⚠️ Native Installation Tips
-- **DEVICE=mps** is crucial for Apple Silicon performance
-- Use separate terminal windows/tabs for each service
-- Python virtual environment recommended for dependency isolation
-- Redis optional but improves performance with caching
+#### 🔧 **What start-dev.sh does:**
+- **Redis Server** → Port 6379 (auto-installed if missing)
+- **Python Voxtral Service** → Port 8000 (with venv)
+- **Node.js API Gateway** → Port 3000 (hot reload)
+- **React Frontend** → Port 5173 (Vite dev server)
+
+#### 📊 **Interactive Management**
+The script provides an interactive menu:
+- `[l]` - Live logs from all services
+- `[s]` - Service status dashboard  
+- `[p]` - Process monitoring
+- `[q]` - Graceful shutdown with cleanup
+
+#### ⚠️ **Manual Installation (Advanced)**
+If you prefer manual setup:
+```bash
+# 1. Redis (required)
+brew install redis && redis-server --daemonize yes
+
+# 2. Python Service
+cd backend/python-service
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+
+# 3. Node.js Gateway  
+cd backend/node-service
+npm install && npm run dev
+
+# 4. Frontend
+cd frontend
+npm install && npm run dev
+```
 
 ---
 
-### 🐳 **Docker Installation (Cross-platform)**
-
-*Alternative installation for non-Apple Silicon systems or containerized deployment*
-
-### 🎯 **Docker Quick Start (Production-Ready)**
-
-1. **Repository klonen**
-   ```bash
-   git clone https://github.com/cubetribe/voxflow_trans.git
-   cd voxflow_trans
-   ```
-
-2. **Docker Desktop starten**
-   - Launcher → Docker Desktop
-   - Warten bis das Whale-Icon in der Menüleiste erscheint
-
-3. **VoxFlow starten** 🚀
-   - **Doppelklick auf `VoxFlow-Start.command`** (Empfohlen)
-   - Oder Terminal: `./start-dev.sh`
-   
-   **Neue Features:**
-   - 🎙️ **Interaktive Einführung** - Was ist VoxFlow?
-   - 🐛 **Debug-Modus wählbar** - Detaillierte System-Informationen
-   - 📊 **Verzeichnis-Checks** - Automatische Pfad-Validierung
-   - 🌐 **Auto-Browser Start** - Öffnet automatisch http://localhost:5173
-   - 🔧 **Service-Management** - Interaktives Terminal-Menü (Logs, Status, Restart)
-
-4. **Redis für optimale Performance (optional)**
-   - Doppelklick auf `install-redis.command`
-   - Automatisches Homebrew + Redis Setup
-
-### 🛠️ **Alternative: Manuelle Installation**
-
-#### Prerequisites
-- **macOS** 14+ (optimiert für Apple Silicon)
-- **Docker Desktop** 
-- **Node.js** 18.x+ (optional für lokale Entwicklung)
-- **Python** 3.9+ (optional für lokale Entwicklung)
-- **Redis** (optional, automatisch via `install-redis.command`)
-
-#### Manual Setup
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/cubetribe/voxflow_trans.git
-   cd voxflow_trans
-   ```
-
-2. **Set up with Docker (Recommended)**
-   ```bash
-   # For optimal M4 Max performance:
-   docker-compose -f docker-compose.local.yml up --build
-   
-   # OR for complete Docker isolation:
-   docker-compose up --build
-   ```
-
-3. **Access the application**
-   - Frontend: http://localhost:5173
-   - API Gateway: http://localhost:3000
-   - Python Service: http://localhost:8000
-
-## 📖 Documentation
-
-### 📁 Project Structure
-
-```
-voxflow_trans/
-├── 📁 backend/
-│   ├── 📁 node-service/          # API Gateway
-│   │   ├── 📁 src/
-│   │   │   ├── 📁 controllers/   # Route handlers
-│   │   │   ├── 📁 services/      # Business logic
-│   │   │   ├── 📁 middleware/    # Express middleware
-│   │   │   └── 📁 sockets/       # WebSocket handlers
-│   │   └── 📄 package.json
-│   └── 📁 python-service/        # Voxtral Processing
-│       ├── 📁 app/
-│       │   ├── 📁 api/           # FastAPI endpoints
-│       │   ├── 📁 core/          # Core engine
-│       │   └── 📁 services/      # Processing services
-│       └── 📄 requirements.txt
-├── 📁 frontend/                  # React Application
-│   ├── 📁 src/
-│   │   ├── 📁 components/        # React components
-│   │   ├── 📁 hooks/             # Custom React hooks
-│   │   ├── 📁 services/          # API clients
-│   │   └── 📁 stores/            # State management
-│   └── 📄 package.json
-├── 📁 docs/                      # Additional documentation
-├── 📄 README.md
-├── 📄 CONTRIBUTING.md
-└── 📄 CLAUDE.md                  # Claude Code guidance
-```
-
-### 🔗 Related Documentation
-
-- **[Launcher Guide](./README-LAUNCHER.md)** - **Einfacher Start per Doppelklick** ⚡
-- [Backend Architecture](./plan/voxtral-backend.md) - Detailed backend service documentation
-- [Frontend Stack](./plan/voxtral-frontend.md) - Frontend development guide  
-- [UI/UX Design](./plan/voxtral-ui.md) - Design system and components
-- [Project Structure](./docs/PROJECT_STRUCTURE.md) - Complete codebase navigation
-- [Development Summary](./DEVELOPMENT_SUMMARY.md) - Complete implementation overview
-- [Docker Setup](./DOCKER_SETUP.md) - Advanced Docker development guide
-- [Claude Code Guide](./CLAUDE.md) - AI development assistance
-- [Changelog](./CHANGELOG.md) - Version history and updates
+---
 
 ## 🛠️ Development
 
-### Environment Variables
-
-#### Node.js Service (.env)
-```env
-PORT=3000
-REDIS_URL=redis://localhost:6379
-DATABASE_URL=sqlite:./data/voxflow.db
-PYTHON_SERVICE_URL=http://localhost:8000
-JWT_SECRET=your-secret-key
+### 📁 **Project Structure (v0.6)**
+```
+VoxFlow/
+├── backend/
+│   ├── node-service/          # Node.js API Gateway (Port 3000)
+│   │   ├── src/               # TypeScript source code
+│   │   ├── package.json       # Node.js dependencies
+│   │   └── .env               # Environment configuration
+│   └── python-service/        # Python Voxtral Service (Port 8000)
+│       ├── app/               # FastAPI application
+│       ├── requirements.txt   # Python dependencies with MLX
+│       └── venv/              # Virtual environment (auto-created)
+├── frontend/                  # React Frontend (Port 5173)
+│   ├── src/                   # React TypeScript source
+│   ├── package.json           # Frontend dependencies
+│   └── .env.local             # Vite environment vars
+├── start-dev.sh              # One-command native startup
+├── CLAUDE.md                 # Development instructions
+└── README.md                 # This file
 ```
 
-#### Python Service (.env)
-```env
-PORT=8000
-MODEL_NAME=mistralai/Voxtral-Mini-3B-2507
-DEVICE=mps  # For Apple Silicon
-MAX_AUDIO_LENGTH=1800  # 30 minutes
-CHUNK_SIZE=30
+### 🔧 **Development Workflow**
+
+#### Starting Development
+```bash
+# Single command startup (recommended)
+./start-dev.sh
+
+# Or debug mode for troubleshooting
+./start-dev.sh
+# Choose 'y' for debug mode
 ```
 
-#### Frontend (.env.local)
-```env
-VITE_API_URL=http://localhost:3000
-VITE_WS_URL=ws://localhost:3000
-VITE_MAX_FILE_SIZE=500
+#### Service Management
+```bash
+# Check service status
+curl http://localhost:3000/health     # Node.js API
+curl http://localhost:8000/health     # Python Service
+curl http://localhost:5173            # Frontend
+
+# Monitor processes
+ps aux | grep -E "(redis|uvicorn|node|vite)"
+
+# View logs
+tail -f redis.log
+tail -f backend/python-service/python_service.log
+tail -f backend/node-service/node_service.log  
+tail -f frontend/frontend_service.log
+```
+
+#### Making Changes
+- **Frontend**: Hot reload with Vite (instant updates)
+- **Node.js**: Hot reload with nodemon (automatic restart)
+- **Python**: Hot reload with uvicorn --reload (automatic restart)
+- **Configuration**: Edit .env files, services auto-detect changes
+
+### 🧪 **Testing**
+
+#### Backend Testing
+```bash
+# Node.js service tests
+cd backend/node-service
+npm test
+npm run lint
+npm run type-check
+
+# Python service tests  
+cd backend/python-service
+source venv/bin/activate
+pytest
+black . && isort . && flake8 . && mypy .
+```
+
+#### Frontend Testing
+```bash
+cd frontend
+npm test               # Vitest unit tests
+npm run lint          # ESLint checking
+npm run build         # Production build test
+```
+
+### 🐳 **Legacy Docker Support (Removed in v0.6)**
+
+*Docker support has been completely removed for better native performance. All services now run natively with automatic dependency management.*
+
+**Why Docker was removed:**
+- **Performance**: Native execution is 3-5x faster on Apple Silicon
+- **Simplicity**: No container orchestration complexity
+- **Development**: Direct file system access and debugging
+- **Resource usage**: Lower memory and CPU overhead
+
+**Migration from Docker:**
+- Old `docker-compose up` → New `./start-dev.sh`
+- Container networking → localhost URLs
+- Volume mounts → Direct file access
+- Container logs → Service-specific log files
+
+---
+
+## 📖 Documentation
+
+### 🔗 Key Documentation Files
+
+- **[CLAUDE.md](./CLAUDE.md)** - Complete development instructions and project rules
+- **[CHANGELOG.md](./CHANGELOG.md)** - Detailed version history with timestamps
+- **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)** - API endpoints and usage
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Development guidelines and standards
+
+### 🧩 API Endpoints
+
+#### Core Transcription
+- `POST /api/transcribe/file` - Single file transcription
+- `POST /api/transcribe/batch` - Multi-file batch processing
+- `GET /api/transcribe/job/:id/progress` - Real-time progress tracking
+- `POST /api/transcribe/job/:id/cancel` - Cancel active job
+
+#### Health & Monitoring  
+- `GET /health` - Basic health check
+- `GET /health/detailed` - Detailed service status
+- `GET /config/system-status` - System metrics
+
+#### WebSocket Events
+- `WebSocket /socket` - Real-time progress and results
+- `audio:chunk` - Live audio streaming
+- `transcription:partial` - Partial results
+- `transcription:final` - Complete transcription
+
+---
+
+## 🎯 Usage
+
+### 🎙️ **Quick Transcription**
+1. **Start VoxFlow**: `./start-dev.sh`
+2. **Open browser**: http://localhost:5173 (auto-opens)
+3. **Upload audio**: Drag & drop or click to select
+4. **Watch progress**: Real-time transcription updates
+5. **Download results**: JSON, TXT, SRT, or VTT format
+
+### 📁 **Batch Processing**
+- Select multiple files simultaneously
+- Configure output format and destination
+- Monitor progress for all files in dashboard
+- Cancel individual jobs or entire batch
+
+### ⚙️ **Configuration**
+- **Model settings**: Voxtral Mini vs Small
+- **Quality settings**: Chunk size, overlap, noise reduction
+- **Output preferences**: Format, timestamps, confidence scores
+- **Performance tuning**: Concurrent jobs, memory limits
+
+---
+
+## 🤝 Contributing
+
+### 🛠️ **Development Setup**
+1. Fork the repository
+2. Clone your fork: `git clone https://github.com/yourusername/voxflow_trans.git`
+3. Follow the [Quick Start](#-quick-start) instructions
+4. Create a feature branch: `git checkout -b feature/your-feature`
+5. Make changes and test thoroughly
+6. Commit with descriptive messages
+7. Push and create a Pull Request
+
+### 📋 **Code Standards**
+- **TypeScript**: Strict mode, comprehensive typing
+- **Python**: Black formatting, type hints, docstrings
+- **React**: Functional components, custom hooks
+- **Testing**: 90%+ coverage for business logic
+- **Documentation**: Update README and CHANGELOG
+
+### 🧪 **Testing Requirements**
+```bash
+# Backend tests (required before PR)
+cd backend/node-service && npm test && npm run lint
+cd backend/python-service && pytest && black . && mypy .
+
+# Frontend tests
+cd frontend && npm test && npm run lint && npm run build
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- **Mistral AI** for the Voxtral speech-to-text model
+- **Apple** for Metal Performance Shaders and MLX framework
+- **Contributors** who help improve VoxFlow
+
+---
+
+<div align="center">
+<strong>Built with ❤️ for the transcription community</strong>
+
+[⭐ Star this repo](https://github.com/cubetribe/voxflow_trans) | [🐛 Report Bug](https://github.com/cubetribe/voxflow_trans/issues) | [💡 Request Feature](https://github.com/cubetribe/voxflow_trans/issues)
+</div>
 ```
 
 ### 🧪 Testing

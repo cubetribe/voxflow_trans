@@ -1,9 +1,47 @@
 #!/bin/bash
 
-# VoxFlow Development Startup Script
-# This script starts the complete VoxFlow stack in Docker containers
+# VoxFlow Native Development Startup Script
+# This script starts the complete VoxFlow stack natively (no Docker)
 
 set -e
+
+# Process tracking
+REDIS_PID=""
+PYTHON_PID=""
+NODE_PID=""
+FRONTEND_PID=""
+
+# Cleanup function
+cleanup() {
+    echo ""
+    echo "🛑 Stopping VoxFlow services..."
+    
+    if [[ -n "$FRONTEND_PID" ]]; then
+        kill $FRONTEND_PID 2>/dev/null || true
+        echo "✅ Frontend stopped"
+    fi
+    
+    if [[ -n "$NODE_PID" ]]; then
+        kill $NODE_PID 2>/dev/null || true
+        echo "✅ Node.js service stopped"
+    fi
+    
+    if [[ -n "$PYTHON_PID" ]]; then
+        kill $PYTHON_PID 2>/dev/null || true
+        echo "✅ Python service stopped"
+    fi
+    
+    if [[ -n "$REDIS_PID" ]]; then
+        kill $REDIS_PID 2>/dev/null || true
+        echo "✅ Redis stopped"
+    fi
+    
+    echo "🏁 VoxFlow shutdown complete"
+    exit 0
+}
+
+# Trap cleanup on script exit
+trap cleanup EXIT INT TERM
 
 # Wechsle ins Script-Verzeichnis (wichtig für relative Pfade)
 cd "$(dirname "$0")"
@@ -18,7 +56,7 @@ echo "   • Optimiert für Apple Silicon (M1/M2/M3/M4)"
 echo "   • Unterstützt: MP3, WAV, M4A, WEBM, OGG, FLAC"
 echo "   • Batch-Verarbeitung bis 500MB pro Datei"
 echo ""
-echo "🏗️  Architektur:"
+echo "🏗️  Native Architektur:"
 echo "   🐍 Python Service (Port 8000) - Voxtral AI Model"
 echo "   🟢 Node.js Gateway (Port 3000) - API & WebSocket"
 echo "   ⚛️  React Frontend (Port 5173) - Web Interface"
@@ -36,13 +74,18 @@ else
 fi
 
 echo ""
-echo "🚀 Starting VoxFlow Development Environment"
-echo "=========================================="
+echo "🚀 Starting VoxFlow Native Development Environment"
+echo "================================================="
 
-# Check if Docker is running
-if ! docker info > /dev/null 2>&1; then
-    echo "❌ Docker is not running. Please start Docker Desktop."
-    exit 1
+# Check Redis installation
+if ! command -v redis-server &> /dev/null; then
+    echo "❌ Redis not installed. Installing with Homebrew..."
+    if command -v brew &> /dev/null; then
+        brew install redis
+    else
+        echo "❌ Homebrew not found. Please install Redis manually or run: ./install-redis.command"
+        exit 1
+    fi
 fi
 
 # DETAILLIERTE SYSTEM-INFORMATIONEN (im Debug-Modus)
@@ -50,39 +93,36 @@ if [[ $DEBUG_ENABLED == true ]]; then
     echo ""
     echo "🔍 SYSTEM-INFORMATIONEN:"
     echo "   macOS: $(sw_vers -productVersion)"
-    echo "   Docker: $(docker --version)"
+    echo "   Node.js: $(node --version 2>/dev/null || echo 'NICHT INSTALLIERT')"
+    echo "   Python: $(python3 --version 2>/dev/null || echo 'NICHT INSTALLIERT')"
+    echo "   Redis: $(redis-server --version 2>/dev/null || echo 'NICHT INSTALLIERT')"
     echo "   Verfügbarer RAM: $(sysctl hw.memsize | awk '{print int($2/1024/1024/1024)}')GB"
     echo "   CPU Kerne: $(sysctl hw.ncpu | awk '{print $2}')"
     echo ""
     
     echo "🔍 VERZEICHNIS-CHECKS:"
     echo "   Aktuelles Verzeichnis: $(pwd)"
-    if [ -d "frontend_new/project" ]; then
-        echo "   ✅ Frontend: frontend_new/project/ gefunden"
+    if [ -d "frontend" ]; then
+        echo "   ✅ Frontend: frontend/ gefunden"
     else
-        echo "   ❌ Frontend: frontend_new/project/ NICHT gefunden"
+        echo "   ❌ Frontend: frontend/ NICHT gefunden"
         echo "   📂 Verfügbare Verzeichnisse:"
         ls -la | grep "^d" | awk '{print "      " $9}' || true
     fi
     
     if [ -d "backend/node-service" ]; then
         echo "   ✅ Node.js Service: backend/node-service/ gefunden"
+        echo "   📦 package.json: $([ -f "backend/node-service/package.json" ] && echo "✅" || echo "❌")"
     else
         echo "   ❌ Node.js Service: backend/node-service/ NICHT gefunden"
     fi
     
     if [ -d "backend/python-service" ]; then
         echo "   ✅ Python Service: backend/python-service/ gefunden"
+        echo "   📋 requirements.txt: $([ -f "backend/python-service/requirements.txt" ] && echo "✅" || echo "❌")"
+        echo "   🐍 venv: $([ -d "backend/python-service/venv" ] && echo "✅" || echo "❌")"
     else
         echo "   ❌ Python Service: backend/python-service/ NICHT gefunden"
-    fi
-    
-    if [ -f "docker-compose.yml" ]; then
-        echo "   ✅ Docker Compose: docker-compose.yml gefunden"
-    else
-        echo "   ❌ Docker Compose: docker-compose.yml NICHT gefunden"
-        echo "   📂 Verfügbare Dateien:"
-        ls -la *.yml 2>/dev/null | awk '{print "      " $9}' || echo "      Keine .yml Dateien gefunden"
     fi
     echo ""
 fi
@@ -91,23 +131,22 @@ fi
 echo "📝 Setting up environment files..."
 
 # Frontend environment - check if directory exists first
-if [ ! -d "frontend_new/project" ]; then
-    echo "❌ Frontend directory 'frontend_new/project' not found!"
-    echo "   Expected: frontend_new/project/"
+if [ ! -d "frontend" ]; then
+    echo "❌ Frontend directory 'frontend' not found!"
+    echo "   Expected: frontend/"
     echo "   Please check your project structure."
     exit 1
 fi
 
 # Frontend environment
-if [ ! -f frontend_new/project/.env.local ]; then
-    # Create .env.local with default values since .env.example might not exist
-    cat > frontend_new/project/.env.local << EOF
+if [ ! -f frontend/.env.local ]; then
+    cat > frontend/.env.local << EOF
 VITE_API_URL=http://localhost:3000
 VITE_WS_URL=ws://localhost:3000
 VITE_MAX_FILE_SIZE=500
 VITE_CHUNK_SIZE=32
 EOF
-    echo "✅ Created frontend_new/project/.env.local"
+    echo "✅ Created frontend/.env.local"
 fi
 
 # Node.js service environment - check if directory exists first
@@ -121,9 +160,9 @@ fi
 if [ ! -f backend/node-service/.env ]; then
     cat > backend/node-service/.env << EOF
 PORT=3000
-REDIS_URL=redis://redis:6379
+REDIS_URL=redis://localhost:6379
 DATABASE_URL=sqlite:./data/voxflow.db
-PYTHON_SERVICE_URL=http://python-service:8000
+PYTHON_SERVICE_URL=http://localhost:8000
 JWT_SECRET=dev-secret-key-change-in-production
 NODE_ENV=development
 EOF
@@ -145,33 +184,165 @@ MODEL_NAME=mistralai/Voxtral-Mini-3B-2507
 DEVICE=mps
 MAX_AUDIO_LENGTH=1800
 CHUNK_SIZE=30
-REDIS_URL=redis://redis:6379
+REDIS_URL=redis://localhost:6379
 ENVIRONMENT=development
 EOF
     echo "✅ Created backend/python-service/.env"
 fi
 
 echo ""
-echo "🐳 Starting Docker containers..."
+echo "🚀 Starting native services..."
 echo "This may take a few minutes on first run..."
 
-# Check if docker-compose.yml exists
-if [ ! -f "docker-compose.yml" ]; then
-    echo "❌ docker-compose.yml not found in current directory!"
-    echo "   Expected: docker-compose.yml"
-    echo "   Current directory: $(pwd)"
-    echo "   Available compose files:"
-    ls -la docker-compose*.yml 2>/dev/null || echo "   No docker-compose files found"
+# Check dependencies
+echo "🔍 Checking dependencies..."
+
+# Check Node.js
+if ! command -v node &> /dev/null; then
+    echo "❌ Node.js not found. Please install Node.js 18+ from https://nodejs.org/"
     exit 1
 fi
 
-# Build and start all services
-docker-compose up --build -d
+# Check Python
+if ! command -v python3 &> /dev/null; then
+    echo "❌ Python not found. Please install Python 3.8+ from https://python.org/"
+    exit 1
+fi
 
+echo "✅ Dependencies check passed"
 echo ""
-echo "⏳ Waiting for services to become healthy..."
 
-# ERWEITERTE SERVICE-CHECKS MIT DEBUG
+# Service startup functions
+start_redis() {
+    echo "🔴 Starting Redis server..."
+    if pgrep -f redis-server > /dev/null; then
+        echo "   ⚠️  Redis already running"
+        return 0
+    fi
+    
+    redis-server --port 6379 --daemonize yes --logfile redis.log
+    REDIS_PID=$(pgrep -f "redis-server.*6379")
+    
+    # Wait for Redis to be ready
+    local count=0
+    while [ $count -lt 10 ]; do
+        if redis-cli ping >/dev/null 2>&1; then
+            echo "   ✅ Redis ready on port 6379"
+            return 0
+        fi
+        sleep 1
+        count=$((count + 1))
+    done
+    
+    echo "   ❌ Redis startup failed"
+    return 1
+}
+
+start_python_service() {
+    echo "🐍 Starting Python Voxtral service..."
+    cd backend/python-service
+    
+    # Create venv if not exists
+    if [ ! -d "venv" ]; then
+        echo "   📦 Creating Python virtual environment..."
+        python3 -m venv venv
+    fi
+    
+    # Activate venv and install dependencies
+    source venv/bin/activate
+    
+    if [ ! -f "venv/.deps_installed" ]; then
+        echo "   📋 Installing Python dependencies..."
+        pip install -r requirements.txt
+        touch venv/.deps_installed
+    fi
+    
+    # Start service in background
+    echo "   🚀 Starting Voxtral service on port 8000..."
+    nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload > python_service.log 2>&1 &
+    PYTHON_PID=$!
+    cd - > /dev/null
+    
+    # Wait for service to be ready
+    local count=0
+    while [ $count -lt 30 ]; do
+        if curl -s -f "http://localhost:8000/health" > /dev/null 2>&1; then
+            echo "   ✅ Python service ready on port 8000"
+            return 0
+        fi
+        sleep 2
+        count=$((count + 1))
+    done
+    
+    echo "   ❌ Python service startup failed"
+    return 1
+}
+
+start_node_service() {
+    echo "🟢 Starting Node.js API Gateway..."
+    cd backend/node-service
+    
+    # Install dependencies if needed
+    if [ ! -d "node_modules" ] || [ ! -f ".deps_installed" ]; then
+        echo "   📦 Installing Node.js dependencies..."
+        npm install
+        touch .deps_installed
+    fi
+    
+    # Start service in background
+    echo "   🚀 Starting API Gateway on port 3000..."
+    nohup npm run dev > node_service.log 2>&1 &
+    NODE_PID=$!
+    cd - > /dev/null
+    
+    # Wait for service to be ready
+    local count=0
+    while [ $count -lt 20 ]; do
+        if curl -s -f "http://localhost:3000/health" > /dev/null 2>&1; then
+            echo "   ✅ Node.js service ready on port 3000"
+            return 0
+        fi
+        sleep 2
+        count=$((count + 1))
+    done
+    
+    echo "   ❌ Node.js service startup failed"
+    return 1
+}
+
+start_frontend() {
+    echo "⚛️  Starting React Frontend..."
+    cd frontend
+    
+    # Install dependencies if needed
+    if [ ! -d "node_modules" ] || [ ! -f ".deps_installed" ]; then
+        echo "   📦 Installing Frontend dependencies..."
+        npm install
+        touch .deps_installed
+    fi
+    
+    # Start frontend in background
+    echo "   🚀 Starting Frontend on port 5173..."
+    nohup npm run dev > frontend_service.log 2>&1 &
+    FRONTEND_PID=$!
+    cd - > /dev/null
+    
+    # Wait for frontend to be ready
+    local count=0
+    while [ $count -lt 15 ]; do
+        if curl -s -f "http://localhost:5173" > /dev/null 2>&1; then
+            echo "   ✅ Frontend ready on port 5173"
+            return 0
+        fi
+        sleep 2
+        count=$((count + 1))
+    done
+    
+    echo "   ❌ Frontend startup failed"
+    return 1
+}
+
+# Service health check function
 check_service() {
     local service=$1
     local url=$2
@@ -191,8 +362,6 @@ check_service() {
         
         if [[ $DEBUG_ENABLED == true && $((count % 5)) -eq 0 && $count -gt 0 ]]; then
             echo "   🔄 $service: Versuch $count/$timeout..."
-            # Container Status anzeigen
-            docker-compose ps $service 2>/dev/null | tail -n +2 || true
         fi
         
         sleep 2
@@ -203,41 +372,37 @@ check_service() {
     done
     
     echo "❌ $service Timeout nach ${timeout}s"
-    if [[ $DEBUG_ENABLED == true ]]; then
-        echo "🔧 Debug-Logs für $service:"
-        docker-compose logs --tail=10 $service 2>/dev/null || true
-    fi
     return 1
 }
 
-# Check Redis
-echo -n "🔴 Checking Redis..."
-if ! check_service "Redis" "http://localhost:6379"; then
-    echo "Failed to connect to Redis"
+# Start all services in sequence
+echo "🚀 Starting VoxFlow services in sequence..."
+
+# 1. Start Redis
+if ! start_redis; then
+    echo "❌ Failed to start Redis"
+    cleanup
     exit 1
 fi
 
-# Check Python Service
-echo -n "🐍 Checking Python Service..."
-if ! check_service "Python Service" "http://localhost:8000/health"; then
-    echo "Failed to connect to Python Service"
-    docker-compose logs python-service
+# 2. Start Python Service
+if ! start_python_service; then
+    echo "❌ Failed to start Python Service"
+    cleanup
     exit 1
 fi
 
-# Check Node.js Service
-echo -n "🟢 Checking Node.js Service..."
-if ! check_service "Node.js Service" "http://localhost:3000/health"; then
-    echo "Failed to connect to Node.js Service"
-    docker-compose logs node-service
+# 3. Start Node.js Service  
+if ! start_node_service; then
+    echo "❌ Failed to start Node.js Service"
+    cleanup
     exit 1
 fi
 
-# Check Frontend
-echo -n "⚛️  Checking Frontend..."
-if ! check_service "Frontend" "http://localhost:5173"; then
-    echo "Failed to connect to Frontend"
-    docker-compose logs frontend
+# 4. Start Frontend
+if ! start_frontend; then
+    echo "❌ Failed to start Frontend"
+    cleanup
     exit 1
 fi
 
@@ -263,24 +428,27 @@ echo ""
 
 if [[ $DEBUG_ENABLED == true ]]; then
     echo "🐛 DEBUG-BEFEHLE:"
-    echo "   Live-Logs:        docker-compose logs -f"
-    echo "   Service-Status:   docker-compose ps"
-    echo "   Container-Shell:  docker-compose exec <service> sh"
-    echo "   Resource-Usage:   docker stats"
+    echo "   Service-Logs:     tail -f *_service.log"
+    echo "   Process-Status:   ps aux | grep -E '(redis|uvicorn|node|vite)'"
+    echo "   Port-Check:       lsof -i :3000,8000,5173,6379"
+    echo "   Kill-Process:     kill \$PID"
     echo ""
 fi
 
 echo "📊 SERVICE-MANAGEMENT:"
-echo "   View logs:     docker-compose logs -f"
-echo "   Stop all:      docker-compose down"
-echo "   Restart:       docker-compose restart"
-echo "   Shell access:  docker-compose exec <service> sh"
+echo "   View logs:     tail -f redis.log python_service.log node_service.log frontend_service.log"
+echo "   Stop all:      Ctrl+C (cleanup automatisch)"
+echo "   Process IDs:"
+if [[ -n "$REDIS_PID" ]]; then echo "   Redis:         $REDIS_PID"; fi
+if [[ -n "$PYTHON_PID" ]]; then echo "   Python:        $PYTHON_PID"; fi
+if [[ -n "$NODE_PID" ]]; then echo "   Node.js:       $NODE_PID"; fi
+if [[ -n "$FRONTEND_PID" ]]; then echo "   Frontend:      $FRONTEND_PID"; fi
 echo ""
-echo "🔧 Development features:"
+echo "🔧 Native Development Features:"
 echo "   ✅ Hot reload enabled for all services"
-echo "   ✅ Volume mounts for live code editing"
-echo "   ✅ Health checks for service monitoring"
-echo "   ✅ Automatic cleanup and restart on failures"
+echo "   ✅ Live file watching and auto-restart"
+echo "   ✅ Native Apple Silicon performance"
+echo "   ✅ Direct filesystem access"
 echo ""
 
 # Browser automatisch öffnen
@@ -289,12 +457,12 @@ sleep 3
 open http://localhost:5173
 
 echo ""
-echo "🔄 VoxFlow läuft im Hintergrund..."
-echo "🛑 Services stoppen: docker-compose down"
-echo "📊 Live-Logs anzeigen: docker-compose logs -f"
+echo "🔄 VoxFlow läuft nativ im Hintergrund..."
+echo "🛑 Services stoppen: Ctrl+C (automatisches Cleanup)"
+echo "📊 Live-Logs anzeigen: tail -f *_service.log"
 echo ""
 echo "💡 Terminal offen lassen für Service-Management"
-echo "🚪 Zum Beenden: Ctrl+C oder Terminal schließen"
+echo "🚪 Zum Beenden: Ctrl+C"
 echo ""
 
 # Terminal interaktiv halten
@@ -302,16 +470,32 @@ while true; do
     echo "Wähle eine Option:"
     echo "  [l] Live-Logs anzeigen"
     echo "  [s] Service-Status prüfen" 
-    echo "  [r] Services neu starten"
+    echo "  [p] Process-Liste anzeigen"
     echo "  [q] Services stoppen & beenden"
     echo ""
-    read -p "Option (l/s/r/q): " choice
+    read -p "Option (l/s/p/q): " choice
     
     case $choice in
-        l|L) docker-compose logs -f ;;
-        s|S) docker-compose ps ;;
-        r|R) docker-compose restart ;;
-        q|Q) docker-compose down && echo "✅ VoxFlow gestoppt" && exit 0 ;;
+        l|L) 
+            echo "📊 Live-Logs (Ctrl+C zum Beenden):"
+            tail -f redis.log backend/python-service/python_service.log backend/node-service/node_service.log frontend/frontend_service.log 2>/dev/null || echo "Log-Dateien noch nicht verfügbar"
+            ;;
+        s|S) 
+            echo "📋 Service-Status:"
+            echo "Redis:    $(redis-cli ping 2>/dev/null || echo 'NOT RUNNING')"
+            echo "Python:   $(curl -s http://localhost:8000/health >/dev/null 2>&1 && echo 'RUNNING' || echo 'NOT RUNNING')"
+            echo "Node.js:  $(curl -s http://localhost:3000/health >/dev/null 2>&1 && echo 'RUNNING' || echo 'NOT RUNNING')"
+            echo "Frontend: $(curl -s http://localhost:5173 >/dev/null 2>&1 && echo 'RUNNING' || echo 'NOT RUNNING')"
+            ;;
+        p|P)
+            echo "🔍 VoxFlow Processes:"
+            ps aux | grep -E "(redis-server|uvicorn|node.*dev|vite)" | grep -v grep || echo "Keine VoxFlow Processes gefunden"
+            ;;
+        q|Q) 
+            echo "🛑 Stopping VoxFlow..."
+            cleanup
+            exit 0
+            ;;
         *) echo "Ungültige Option" ;;
     esac
     echo ""
