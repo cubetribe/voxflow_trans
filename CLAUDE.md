@@ -271,30 +271,33 @@ VITE_CHUNK_SIZE=32
 ## Current Project State
 
 ### Frontend Status
-- **Active Frontend**: Production-ready React app in `frontend_new/project/` 
+- **Active Frontend**: Production-ready React app in `frontend/` (migrated from frontend_new/project/)
 - **Legacy Frontend**: Complete React app backed up in `frontend/src_backup_20250719_165420/`
-- **Docker Integration**: Updated docker-compose.yml for frontend_new/project/ structure
-- **Path Migration**: All scripts and configs updated for new frontend location
+- **Native Development**: No Docker - direct Vite dev server on port 5173
+- **Path Migration**: All scripts and configs updated for native frontend/ location
 
 ### Backend Status
-- **Node.js Service**: Production-ready with comprehensive API endpoints
-- **Python Service**: MLX-optimized Voxtral integration for Apple Silicon
+- **Node.js Service**: Production-ready with comprehensive API endpoints on port 3000
+- **Python Service**: Voxtral-Mini-3B-2507 working natively with MPS optimization on port 8000
+- **Redis**: Native daemon process on port 6379 (no Docker containers)
 - **Database**: SQLite with proper migrations in `backend/node-service/data/`
 
 ### Testing Strategy
 - **Node.js**: Jest with integration tests in `backend/node-service/tests/`
-- **Python**: pytest with async support in `backend/python-service/tests/`
-- **Frontend**: Vitest + Playwright (when active frontend is determined)
+- **Python**: pytest with async support + Voxtral native testing via test_voxtral_native.py
+- **Frontend**: Vitest + Playwright in `frontend/` for React components and E2E testing
+- **Voxtral Integration**: Pre-startup validation with apply_transcrition_request API
 
 ## Key Development Patterns
 
-### Docker & Dependency Management
-- **Dual Requirements Strategy**: 
-  - `requirements.txt` - Full dependencies with MLX for native macOS
-  - `requirements-docker.txt` - Linux-compatible subset for Docker builds
-- **Frontend Path Structure**: All paths point to `frontend_new/project/`
-- **Directory Validation**: Scripts validate paths before execution
-- **Environment Management**: Automatic .env file creation with defaults
+### Native Development & Dependency Management
+- **No Docker**: Complete transition to native development for maximum performance
+- **Python Virtual Environment**: Full dependency isolation with venv in backend/python-service/
+- **Smart Dependency Tracking**: .deps_installed markers prevent redundant installations
+- **Frontend Path Structure**: All paths point to `frontend/` (migrated from frontend_new/project/)
+- **Directory Validation**: Scripts validate paths before execution  
+- **Environment Management**: Automatic .env file creation with localhost URLs
+- **Voxtral Integration**: VoxtralForConditionalGeneration with apply_transcrition_request API
 
 ### Large File Processing
 - **Chunking Strategy**: 10-minute segments with 10-second overlap

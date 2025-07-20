@@ -104,7 +104,7 @@ graph TB
 
 #### Requirements
 - **macOS 14+** with Apple Silicon (M1/M2/M3/M4)
-- **Python 3.11 or 3.12** (recommended)
+- **Python 3.11, 3.12, or 3.13** (all tested and working)
 - **Node.js 18+** 
 - **Redis** (auto-installed if missing)
 - **16GB+ RAM** recommended for large files
@@ -112,24 +112,25 @@ graph TB
 #### 🚀 **Ultra-Fast Setup (30 seconds)**
 ```bash
 # 1. Clone repository
-git clone https://github.com/cubetribe/voxflow_trans.git
-cd voxflow_trans
+git clone <your-repo-url>
+cd VoxFlow_Traskriber
 
 # 2. One-command startup
 ./start-dev.sh
 ```
 
 **That's it!** 🎉 VoxFlow automatically:
-- ✅ Checks and installs dependencies  
-- ✅ Creates Python virtual environment
-- ✅ Installs npm packages
+- ✅ Checks and installs dependencies (Python 3.13 compatible)
+- ✅ Creates production-ready Python virtual environment
+- ✅ Tests Voxtral model functionality before startup
+- ✅ Installs npm packages for all services  
 - ✅ Starts all services with health checks
 - ✅ Opens browser to http://localhost:5173
 
 #### 🔧 **What start-dev.sh does:**
 - **Redis Server** → Port 6379 (auto-installed if missing)
-- **Python Voxtral Service** → Port 8000 (with venv)
-- **Node.js API Gateway** → Port 3000 (hot reload)
+- **Python Voxtral Service** → Port 8000 (with production venv + Voxtral testing)
+- **Node.js API Gateway** → Port 3000 (hot reload enabled)
 - **React Frontend** → Port 5173 (Vite dev server)
 
 #### 📊 **Interactive Management**

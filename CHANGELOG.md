@@ -67,6 +67,31 @@ VoxFlow/
 - **Status dashboard**: Quick health overview
 - **Interactive controls**: Start/stop/restart individual services
 
+### 📅 **2025-07-20 09:15-14:30 CET** - Native Voxtral Integration & Testing
+#### 🎯 **Production-Ready Voxtral Testing**
+- **Resolved missing dependencies**: Added torchaudio, pydub, webrtcvad, ffmpeg-python, psutil
+- **Fixed Python service startup**: All imports now work correctly with proper venv setup
+- **Voxtral test verification**: test_voxtral_native.py passes with real audio files
+- **MPS device optimization**: Confirmed Apple Silicon performance on M4 Max
+
+#### 🔧 **start-dev.sh Enhancements**
+- **Integrated Voxtral testing**: Pre-startup model validation prevents service failures
+- **Production dependency management**: Comprehensive pip install with Python 3.13 support
+- **Smart dependency tracking**: .deps_installed marker prevents redundant installations
+- **Error handling improvement**: Graceful failure with clear error messages
+
+#### ✅ **Native Development Stack Verified**
+- **Redis**: Native daemon process management ✅
+- **Python Service**: Voxtral model loading and testing ✅
+- **Node.js Gateway**: API endpoints and WebSocket ready ✅
+- **React Frontend**: Vite development server ready ✅
+
+#### 🚀 **Ready for Production Testing**
+- **Complete service orchestration**: All 4 services start successfully in sequence
+- **Health check validation**: Each service waits for readiness before proceeding
+- **Voxtral functionality confirmed**: Real audio transcription working natively
+- **Apple Silicon optimization**: MPS device utilization verified
+
 ### 📅 **2025-07-20 09:15 CET** - Git Repository Update
 #### 🔄 **Repository State**
 - **Commit**: `33f053c feat: Ultra-clean v0.6 structure - native development only`

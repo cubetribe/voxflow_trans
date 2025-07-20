@@ -252,9 +252,28 @@ start_python_service() {
     source venv/bin/activate
     
     if [ ! -f "venv/.deps_installed" ]; then
-        echo "   📋 Installing Python dependencies..."
-        pip install -r requirements.txt
+        echo "   📋 Installing Python dependencies (production-ready)..."
+        # Install core dependencies first (Python 3.13 compatible)
+        pip install fastapi uvicorn transformers torch torchaudio numpy pydantic pydantic-settings
+        # Install Voxtral-specific dependencies
+        pip install git+https://github.com/huggingface/transformers.git mistral-common
+        # Install audio processing
+        pip install soundfile librosa
+        # Install logging and utilities
+        pip install loguru aiofiles python-multipart
+        
         touch venv/.deps_installed
+        echo "   ✅ Production dependencies installed successfully"
+    fi
+    
+    # Test Voxtral before starting service (Production-Ready validation)
+    echo "   🎯 Testing Voxtral model functionality..."
+    if python test_voxtral_native.py; then
+        echo "   ✅ Voxtral test passed - model ready for production"
+    else
+        echo "   ❌ Voxtral test failed - check configuration"
+        echo "   💡 Ensure you're on Apple Silicon with MPS support"
+        return 1
     fi
     
     # Start service in background
