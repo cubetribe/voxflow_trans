@@ -163,7 +163,17 @@ else
     export VOXFLOW_FAST_START="true"
     
     # Führe start-dev.sh mit automatischem Debug-Modus aus (skip installations)
+    # Terminal bleibt offen für Debugging
     echo "$DEBUG_MODE" | ./start-dev.sh
+    
+    # Terminal geöffnet lassen
+    echo ""
+    echo "💡 Terminal bleibt für Debugging geöffnet"
+    echo "🛑 VoxFlow stoppen: Ctrl+C"
+    echo ""
+    
+    # Warte auf user input um Terminal offen zu halten
+    read -p "Drücke Enter um VoxFlow-Start zu beenden (Services laufen weiter)..."
 fi
 
 # Fallback: Sollte normalerweise nicht erreicht werden
