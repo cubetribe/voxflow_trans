@@ -291,8 +291,17 @@ echo "🟢 Phase 2: Node.js Backend Reset..."
 cd backend/node-service
 
 if [ -d "node_modules" ]; then
-    echo "   🗑️  Entferne Node.js Dependencies..."
-    rm -rf node_modules
+    echo "   🗑️  Entferne Node.js Dependencies (kann 30-60s dauern)..."
+    # macOS-optimierte Löschung für große Verzeichnisse
+    if command -v trash &> /dev/null; then
+        # Nutze trash wenn verfügbar (schneller)
+        trash node_modules 2>/dev/null || rm -rf node_modules
+    else
+        # Nutze rsync trick für schnelle Löschung auf macOS
+        mkdir -p .tmp_empty
+        rsync -a --delete .tmp_empty/ node_modules/ 2>/dev/null || true
+        rm -rf node_modules .tmp_empty 2>/dev/null || true
+    fi
     log_info "Removed Node.js dependencies"
     echo "   ✅ Node.js Dependencies entfernt"
 fi
@@ -330,8 +339,17 @@ echo "⚛️  Phase 3: Frontend Reset..."
 cd frontend
 
 if [ -d "node_modules" ]; then
-    echo "   🗑️  Entferne Frontend Dependencies..."
-    rm -rf node_modules
+    echo "   🗑️  Entferne Frontend Dependencies (kann 30-60s dauern)..."
+    # macOS-optimierte Löschung für große Verzeichnisse
+    if command -v trash &> /dev/null; then
+        # Nutze trash wenn verfügbar (schneller)
+        trash node_modules 2>/dev/null || rm -rf node_modules
+    else
+        # Nutze rsync trick für schnelle Löschung auf macOS
+        mkdir -p .tmp_empty
+        rsync -a --delete .tmp_empty/ node_modules/ 2>/dev/null || true
+        rm -rf node_modules .tmp_empty 2>/dev/null || true
+    fi
     log_info "Removed Frontend dependencies"
     echo "   ✅ Frontend Dependencies entfernt"
 fi
