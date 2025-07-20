@@ -111,12 +111,11 @@ echo ""
 echo "❓ BESTÄTIGUNG ERFORDERLICH:"
 echo ""
 echo "⚠️  Dieser Vorgang kann NICHT rückgängig gemacht werden!"
-echo "💾 Ein Backup wird automatisch erstellt"
 echo ""
 echo "🔄 RESET-OPTIONEN:"
-echo "   [1] 🧹 Vollständiger Reset (empfohlen)"
-echo "   [2] 💾 Reset mit Backup"
-echo "   [3] 🔍 Nur Dependencies entfernen (Source Code bleibt)"
+echo "   [1] 🧹 Vollständiger Reset (KEIN Backup - schnell)"
+echo "   [2] 💾 Reset mit Backup (dauert länger)"
+echo "   [3] 🔍 Nur Dependencies entfernen (KEIN Backup)"
 echo "   [4] ❌ Abbrechen"
 echo ""
 
@@ -126,7 +125,7 @@ while true; do
         1)
             echo "   🧹 Vollständiger Reset gewählt"
             RESET_MODE="full"
-            CREATE_BACKUP=true
+            CREATE_BACKUP=false
             break
             ;;
         2)
@@ -139,7 +138,7 @@ while true; do
         3)
             echo "   🔍 Nur Dependencies entfernen gewählt"
             RESET_MODE="deps_only"
-            CREATE_BACKUP=true
+            CREATE_BACKUP=false
             break
             ;;
         4)
@@ -166,34 +165,96 @@ fi
 echo ""
 log_info "Starting VoxFlow reset in $RESET_MODE mode"
 
-# BACKUP CREATION
+# PRODUCTION-READY BACKUP CREATION
 if [ "$CREATE_BACKUP" = true ]; then
-    echo "💾 Erstelle Backup der aktuellen Installation..."
+    echo "💾 Erstelle intelligentes Backup (ohne node_modules/venv)..."
     mkdir -p "$BACKUP_DIR"
     
-    # Backup installation state
+    # Create backup directory structure
+    mkdir -p "$BACKUP_DIR/backend/node-service"
+    mkdir -p "$BACKUP_DIR/backend/python-service" 
+    mkdir -p "$BACKUP_DIR/frontend"
+    
+    # 1. Backup installation marker
     if [ -f "$INSTALLATION_MARKER" ]; then
         cp "$INSTALLATION_MARKER" "$BACKUP_DIR/" 2>/dev/null || true
         log_info "Backed up installation marker"
+        echo "   ✅ Installation marker"
     fi
     
-    # Backup package-lock files (small but important)
-    find . -name "package-lock.json" -exec cp --parents {} "$BACKUP_DIR/" 2>/dev/null \; || true
+    # 2. Backup package.json and package-lock.json (macOS compatible)
+    for dir in "backend/node-service" "frontend"; do
+        if [ -f "$dir/package.json" ]; then
+            cp "$dir/package.json" "$BACKUP_DIR/$dir/" 2>/dev/null || true
+            log_info "Backed up $dir/package.json"
+        fi
+        if [ -f "$dir/package-lock.json" ]; then
+            cp "$dir/package-lock.json" "$BACKUP_DIR/$dir/" 2>/dev/null || true
+            log_info "Backed up $dir/package-lock.json"
+        fi
+    done
+    echo "   ✅ Package files"
     
-    # Backup pip freeze output if venv exists
+    # 3. Backup Python requirements (from active venv)
     if [ -d "backend/python-service/venv" ]; then
         cd backend/python-service
-        source venv/bin/activate 2>/dev/null && pip freeze > "$BACKUP_DIR/python_requirements_backup.txt" 2>/dev/null || true
-        deactivate 2>/dev/null || true
+        if source venv/bin/activate 2>/dev/null; then
+            pip freeze > "../../$BACKUP_DIR/python_requirements_backup.txt" 2>/dev/null || true
+            deactivate 2>/dev/null || true
+            log_info "Backed up Python requirements from venv"
+            echo "   ✅ Python requirements"
+        fi
         cd ../..
-        log_info "Backed up Python requirements"
     fi
     
-    # Backup environment files
-    find . -name ".env*" -not -path "./node_modules/*" -not -path "./venv/*" -exec cp --parents {} "$BACKUP_DIR/" 2>/dev/null \; || true
+    # 4. Copy requirements.txt
+    if [ -f "backend/python-service/requirements.txt" ]; then
+        cp "backend/python-service/requirements.txt" "$BACKUP_DIR/backend/python-service/" 2>/dev/null || true
+        log_info "Backed up requirements.txt"
+    fi
     
-    log_info "Backup created in $BACKUP_DIR"
+    # 5. Backup environment files (macOS compatible approach)
+    for env_file in frontend/.env.local backend/node-service/.env backend/python-service/.env; do
+        if [ -f "$env_file" ]; then
+            # Create target directory if needed
+            target_dir="$BACKUP_DIR/$(dirname "$env_file")"
+            mkdir -p "$target_dir"
+            cp "$env_file" "$target_dir/" 2>/dev/null || true
+            log_info "Backed up $env_file"
+        fi
+    done
+    echo "   ✅ Environment files"
+    
+    # 6. Create backup metadata
+    cat > "$BACKUP_DIR/BACKUP_INFO.txt" << EOF
+VoxFlow Reset Backup
+===================
+Created: $(date)
+Backup Type: Smart backup (configs only, no dependencies)
+Original Location: $(pwd)
+
+Backup Contents:
+- Installation marker (.installation_complete)
+- Package files (package.json, package-lock.json)  
+- Python requirements (pip freeze output)
+- Environment files (.env, .env.local)
+- Configuration files
+
+NOT INCLUDED (by design):
+- node_modules/ (will be reinstalled)
+- venv/ (will be recreated)
+- dist/, build/ (will be rebuilt)
+
+Restore Instructions:
+1. Run ./VoxFlow-Reset.command
+2. Run ./VoxFlow-Install.command
+3. Manually restore .env files if needed from this backup
+
+EOF
+    
+    log_info "Backup created in $BACKUP_DIR with metadata"
     echo "   ✅ Backup erstellt: $BACKUP_DIR"
+    echo "   📋 Backup Info: $BACKUP_DIR/BACKUP_INFO.txt"
 fi
 
 # RESET PHASE 1: PYTHON ENVIRONMENT
