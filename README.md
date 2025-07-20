@@ -119,10 +119,10 @@ git clone <your-repo-url>
 cd VoxFlow_Traskriber
 
 # 2. One-time installation (5-10 minutes)
-./installers/VoxFlow-Install.command
+cd installers && ./VoxFlow-Install.command
 
 # 3. Ultra-fast startup (<5 seconds)
-./installers/VoxFlow-Start.command
+cd installers && ./VoxFlow-Start.command
 ```
 
 #### ⚡ **Why This Approach?**
@@ -151,10 +151,10 @@ cd VoxFlow_Traskriber
 #### 🧹 **Reset & Troubleshooting:**
 ```bash
 # Clean slate reset (removes all installations)
-./installers/VoxFlow-Reset.command
+cd installers && ./VoxFlow-Reset.command
 
 # Then re-install
-./installers/VoxFlow-Install.command
+cd installers && ./VoxFlow-Install.command
 ```
 
 #### 📁 **Installer Files Location:**
