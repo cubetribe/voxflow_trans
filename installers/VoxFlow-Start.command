@@ -6,8 +6,8 @@
 
 set -e
 
-# Wechsle ins Script-Verzeichnis (wichtig für relative Pfade)
-cd "$(dirname "$0")"
+# Wechsle ins Project Root (Parent-Verzeichnis des Installer-Ordners)
+cd "$(dirname "$0")/.."
 
 # Terminal-Konfiguration für bessere Darstellung
 export TERM="${TERM:-xterm-256color}"
