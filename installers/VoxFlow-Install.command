@@ -369,8 +369,9 @@ npm_install_with_retry() {
         echo "      Versuch $attempt/$max_attempts: npm install"
         log_info "npm install attempt $attempt"
         
-        # Use npm ci for production builds, install for development
-        if timeout 300 npm install --prefer-offline --no-audit --progress=false; then
+        # macOS-compatible npm install with monitoring
+        echo "         📦 npm install läuft... (max 5 Minuten)"
+        if npm install --prefer-offline --no-audit --progress=false; then
             log_success "npm install completed successfully"
             echo "   ✅ Node.js Dependencies installiert"
             return 0
@@ -435,7 +436,8 @@ echo "   📦 Installiere Frontend Dependencies..."
 log_info "Installing Frontend dependencies"
 
 # Frontend npm installation (usually lighter than backend)
-if timeout 180 npm install --prefer-offline --no-audit --progress=false; then
+echo "   📦 npm install läuft... (max 3 Minuten)"
+if npm install --prefer-offline --no-audit --progress=false; then
     log_success "Frontend dependencies installed successfully"
     echo "   ✅ Frontend Dependencies installiert"
 else
