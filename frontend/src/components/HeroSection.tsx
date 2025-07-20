@@ -1,11 +1,12 @@
 import React, { useCallback, useState } from 'react';
 import { Upload, File, X } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { FileItem, TranscriptionConfig } from '../types';
+import { FileItem, TranscriptionConfig, TranscriptionResult } from '../types';
 import { uploadFile, startTranscription } from '../services/api';
 
 interface HeroSectionProps {
   onFilesAdded: (files: FileItem[]) => void;
+  onTranscriptionResult?: (result: TranscriptionResult) => void;
   config: TranscriptionConfig;
 }
 
@@ -13,7 +14,7 @@ const SUPPORTED_FORMATS = ['mp3', 'wav', 'm4a', 'webm', 'ogg', 'flac'];
 const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
 const MAX_FILES = 10;
 
-const HeroSection: React.FC<HeroSectionProps> = ({ onFilesAdded, config }) => {
+const HeroSection: React.FC<HeroSectionProps> = ({ onFilesAdded, onTranscriptionResult, config }) => {
   const [isDragActive, setIsDragActive] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
@@ -115,6 +116,20 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onFilesAdded, config }) => {
           console.log('HeroSection: Direct transcription result received');
           fileItem.status = 'completed';
           fileItem.result = transcriptionResponse;
+          
+          // Add to transcription results if callback provided
+          if (onTranscriptionResult) {
+            const result: TranscriptionResult = {
+              id: fileItem.id,
+              text: transcriptionResponse.text || transcriptionResponse.segments?.map((s: any) => s.text).join(' ') || '',
+              confidence: transcriptionResponse.confidence,
+              timestamp: new Date().toISOString(),
+              fileName: fileItem.name,
+              systemPromptUsed: config.systemPrompt
+            };
+            onTranscriptionResult(result);
+          }
+          
           toast.success(`Transcription completed for ${fileItem.name}`);
         } else if (transcriptionResponse.jobId) {
           // Job ID - async processing

@@ -87,6 +87,10 @@ function App() {
     setTranscriptionResults([]);
   };
 
+  const handleTranscriptionResult = (result: TranscriptionResult) => {
+    setTranscriptionResults(prev => [...prev, result]);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
       <Toaster 
@@ -106,7 +110,11 @@ function App() {
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
           {/* Main Content */}
           <div className="xl:col-span-3 space-y-8">
-            <HeroSection onFilesAdded={handleFilesAdded} config={config} />
+            <HeroSection 
+              onFilesAdded={handleFilesAdded} 
+              onTranscriptionResult={handleTranscriptionResult}
+              config={config} 
+            />
             <FileManager files={files} onFileRemove={handleFileRemove} />
           </div>
           

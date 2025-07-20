@@ -51,7 +51,7 @@ const SystemPromptPanel: React.FC<SystemPromptPanelProps> = ({ onPromptChange })
       setCharacterCount(DEFAULT_PROMPT.length);
       onPromptChange(DEFAULT_PROMPT);
     }
-  }, [onPromptChange]);
+  }, []); // Empty dependency array - only run on mount
 
   const handlePromptChange = (newPrompt: string) => {
     setPrompt(newPrompt);
