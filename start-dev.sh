@@ -40,8 +40,8 @@ cleanup() {
     exit 0
 }
 
-# Trap cleanup on script exit
-trap cleanup EXIT INT TERM
+# Only trap INT and TERM (not EXIT), so services continue when script ends
+trap cleanup INT TERM
 
 # Wechsle ins Script-Verzeichnis (wichtig für relative Pfade)
 cd "$(dirname "$0")"
@@ -63,8 +63,16 @@ echo "   ⚛️  React Frontend (Port 5173) - Web Interface"
 echo "   🔴 Redis Cache (Port 6379) - Performance"
 echo ""
 
-# DEBUG-MODUS ABFRAGE
-read -p "🔧 Debug-Modus aktivieren? (y/n): " DEBUG_MODE
+# DEBUG-MODUS ABFRAGE (von Environment Variable oder User Input)
+if [[ -n "$VOXFLOW_DEBUG_MODE" ]]; then
+    # Debug mode set by VoxFlow-Start.command
+    DEBUG_MODE="$VOXFLOW_DEBUG_MODE"
+    echo "🔧 Debug-Modus: $DEBUG_MODE (von VoxFlow-Start gesetzt)"
+else
+    # Interactive mode
+    read -p "🔧 Debug-Modus aktivieren? (y/n): " DEBUG_MODE
+fi
+
 if [[ $DEBUG_MODE == "y" || $DEBUG_MODE == "Y" ]]; then
     echo "🐛 DEBUG-MODUS AKTIV - Detaillierte Logs werden angezeigt"
     DEBUG_ENABLED=true
@@ -212,9 +220,48 @@ fi
 echo "✅ Dependencies check passed"
 echo ""
 
+# Port checking function
+check_port() {
+    local port=$1
+    local service_name=$2
+    
+    if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
+        echo "⚠️  Port $port already in use by another process"
+        echo "   Service: $service_name"
+        echo "   PID: $(lsof -Pi :$port -sTCP:LISTEN -t)"
+        return 1
+    fi
+    return 0
+}
+
+# Service cleanup function
+cleanup_service_ports() {
+    echo "🧹 Cleaning up potentially conflicting processes..."
+    
+    # Kill any existing VoxFlow processes
+    pkill -f "redis-server.*6379" 2>/dev/null || true
+    pkill -f "uvicorn.*8000" 2>/dev/null || true
+    pkill -f "npm.*dev.*node-service" 2>/dev/null || true
+    pkill -f "npm.*dev.*frontend" 2>/dev/null || true
+    pkill -f "vite.*5173" 2>/dev/null || true
+    
+    # Wait for processes to terminate
+    sleep 3
+    
+    echo "   ✅ Process cleanup completed"
+}
+
 # Service startup functions
 start_redis() {
     echo "🔴 Starting Redis server..."
+    
+    # Check if port is available
+    if ! check_port 6379 "Redis"; then
+        echo "   🧹 Cleaning up existing Redis process..."
+        pkill -f "redis-server.*6379" 2>/dev/null || true
+        sleep 2
+    fi
+    
     if pgrep -f redis-server > /dev/null; then
         echo "   ⚠️  Redis already running"
         return 0
@@ -312,6 +359,15 @@ start_python_service() {
 
 start_node_service() {
     echo "🟢 Starting Node.js API Gateway..."
+    
+    # Check if port is available
+    if ! check_port 3000 "Node.js API Gateway"; then
+        echo "   🧹 Cleaning up existing Node.js process..."
+        pkill -f "npm.*dev.*node-service" 2>/dev/null || true
+        pkill -f "node.*tsx.*server.ts" 2>/dev/null || true
+        sleep 3
+    fi
+    
     cd backend/node-service
     
     # Check for FAST_START mode
@@ -357,6 +413,15 @@ start_node_service() {
 
 start_frontend() {
     echo "⚛️  Starting React Frontend..."
+    
+    # Check if port is available
+    if ! check_port 5173 "React Frontend"; then
+        echo "   🧹 Cleaning up existing Frontend process..."
+        pkill -f "npm.*dev.*frontend" 2>/dev/null || true
+        pkill -f "vite.*5173" 2>/dev/null || true
+        sleep 3
+    fi
+    
     cd frontend
     
     # Check for FAST_START mode
@@ -432,6 +497,9 @@ check_service() {
     echo "❌ $service Timeout nach ${timeout}s"
     return 1
 }
+
+# Initial cleanup to prevent port conflicts
+cleanup_service_ports
 
 # Start all services in sequence
 echo "🚀 Starting VoxFlow services in sequence..."
@@ -523,7 +591,17 @@ echo "💡 Terminal offen lassen für Service-Management"
 echo "🚪 Zum Beenden: Ctrl+C"
 echo ""
 
-# Terminal interaktiv halten
+# Terminal interaktiv halten (nur wenn direkt aufgerufen)
+if [[ -n "$VOXFLOW_FAST_START" ]]; then
+    echo "⚡ VoxFlow Services im Hintergrund gestartet (Fast Start Mode)"
+    echo "📊 Voxtral Debug-Logs anzeigen: tail -f backend/python-service/python_service.log | grep -E '(transcription|Voxtral|processor)'"
+    echo "🛑 Services manuell stoppen: pkill -f 'redis-server.*6379|uvicorn.*8000|npm.*dev'"
+    echo ""
+    echo "💡 Terminal bleibt für weitere Befehle verfügbar..."
+    exit 0
+fi
+
+# Interactive mode (nur wenn direkt aufgerufen)
 while true; do
     echo "Wähle eine Option:"
     echo "  [l] Live-Logs anzeigen"

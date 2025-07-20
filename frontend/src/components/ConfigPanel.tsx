@@ -1,6 +1,7 @@
 import React from 'react';
-import { Settings, FolderOpen, Clock, Target } from 'lucide-react';
+import { Settings, FolderOpen, Clock, Target, Save } from 'lucide-react';
 import { TranscriptionConfig } from '../types';
+import toast from 'react-hot-toast';
 
 interface ConfigPanelProps {
   config: TranscriptionConfig;
@@ -8,6 +9,46 @@ interface ConfigPanelProps {
 }
 
 const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, onChange }) => {
+  const handleDirectorySelect = async () => {
+    try {
+      // Use the File System Access API for modern browsers
+      if ('showDirectoryPicker' in window) {
+        const directoryHandle = await (window as any).showDirectoryPicker();
+        onChange({ outputDirectory: directoryHandle.name });
+        toast.success('Directory selected successfully!');
+      } else {
+        // Fallback: prompt user to enter path manually
+        const path = prompt('Enter output directory path:', config.outputDirectory);
+        if (path && path.trim()) {
+          onChange({ outputDirectory: path.trim() });
+          toast.success('Directory path updated!');
+        }
+      }
+    } catch (error) {
+      if ((error as Error).name !== 'AbortError') {
+        toast.error('Failed to select directory');
+        console.error('Directory selection failed:', error);
+      }
+    }
+  };
+
+  const handleSaveConfiguration = () => {
+    // Validate configuration
+    if (!config.outputDirectory.trim()) {
+      toast.error('Please select an output directory');
+      return;
+    }
+    
+    // Save configuration (implement API call here)
+    try {
+      // TODO: Implement actual save to backend
+      localStorage.setItem('voxflow-config', JSON.stringify(config));
+      toast.success('Configuration saved successfully!');
+    } catch (error) {
+      toast.error('Failed to save configuration');
+      console.error('Save failed:', error);
+    }
+  };
   return (
     <div className="glass-morphism p-6 rounded-xl">
       <div className="flex items-center space-x-2 mb-6">
@@ -28,8 +69,6 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, onChange }) => {
           >
             <option value="json">JSON</option>
             <option value="txt">Plain Text</option>
-            <option value="srt">SRT Subtitles</option>
-            <option value="vtt">WebVTT</option>
           </select>
         </div>
 
@@ -46,8 +85,12 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, onChange }) => {
               className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="/path/to/output"
             />
-            <button className="px-3 py-2 bg-white/10 border border-white/20 rounded-lg hover:bg-white/20 transition-colors">
-              <FolderOpen className="w-4 h-4 text-blue-400" />
+            <button 
+              onClick={handleDirectorySelect}
+              className="px-3 py-2 bg-white/10 border border-white/20 rounded-lg hover:bg-white/20 transition-colors group"
+              title="Select output directory"
+            >
+              <FolderOpen className="w-4 h-4 text-blue-400 group-hover:text-blue-300" />
             </button>
           </div>
         </div>
@@ -111,8 +154,12 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, onChange }) => {
       </div>
       
       <div className="mt-6 pt-4 border-t border-white/10">
-        <button className="w-full py-2 px-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-200">
-          Save Configuration
+        <button 
+          onClick={handleSaveConfiguration}
+          className="w-full py-2 px-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-200 flex items-center justify-center space-x-2"
+        >
+          <Save className="w-4 h-4" />
+          <span>Save Configuration</span>
         </button>
       </div>
     </div>

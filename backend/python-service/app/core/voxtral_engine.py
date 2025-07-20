@@ -476,14 +476,20 @@ class VoxtralEngine:
                     pad_token_id=self.processor.tokenizer.eos_token_id
                 )
             
-            # Decode transcription
-            transcription = self.processor.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            # Decode transcription using the correct Voxtral API (same as test_voxtral_native.py)
+            transcription = self.processor.decode(outputs[0], skip_special_tokens=True)
             logger.info(f"Raw Voxtral transcription: {transcription}")
             
             # Clean up the transcription (remove language prefix if present)
             clean_text = transcription
             if clean_text.startswith(f"lang:{language or 'en'}"):
                 clean_text = clean_text[len(f"lang:{language or 'en'}"):].strip()
+            
+            # Additional cleanup for common Voxtral prefixes
+            if clean_text.startswith("<|audio|>"):
+                clean_text = clean_text[9:].strip()
+            if clean_text.startswith("<|transcribe|>"):
+                clean_text = clean_text[14:].strip()
             
             # Process result
             processed_result = {

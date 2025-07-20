@@ -50,11 +50,12 @@ class HealthController {
     const healthyServices = healthChecks.filter(check => check.status === 'fulfilled').length;
     const totalServices = 3;
     
-    // Get system memory info
+    // Get real system memory info
+    const totalMemory = require('os').totalmem();
     const memoryInfo = {
       used: Math.round(process.memoryUsage().rss),
-      total: Math.round(8 * 1024 * 1024 * 1024), // 8GB default
-      percentage: Math.round((process.memoryUsage().rss / (8 * 1024 * 1024 * 1024)) * 100)
+      total: Math.round(totalMemory),
+      percentage: Math.round((process.memoryUsage().rss / totalMemory) * 100)
     };
 
     // Return SystemStatus format expected by frontend
