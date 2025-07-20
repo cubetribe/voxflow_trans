@@ -26,6 +26,7 @@ async def transcribe_file(
     format: str = Form("json"),
     include_timestamps: bool = Form(True),
     include_confidence: bool = Form(True),
+    system_prompt: Optional[str] = Form(None),
 ) -> TranscriptionResponse:
     """
     Transcribe an uploaded audio file.
@@ -36,6 +37,7 @@ async def transcribe_file(
         format: Response format (json, text, srt)
         include_timestamps: Include word-level timestamps
         include_confidence: Include confidence scores
+        system_prompt: System prompt for AI transcription guidance
     
     Returns:
         TranscriptionResponse with transcribed text and metadata
@@ -86,6 +88,7 @@ async def transcribe_file(
             format=format,
             include_timestamps=include_timestamps,
             include_confidence=include_confidence,
+            system_prompt=system_prompt,
         )
         
         # Process transcription

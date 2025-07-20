@@ -20,6 +20,7 @@ export interface BatchUploadConfig {
   includeTimestamps: boolean;
   includeConfidence: boolean;
   cleanupAfterProcessing: boolean;
+  systemPrompt?: string;
 }
 
 export class AudioService {
@@ -250,6 +251,7 @@ export class AudioService {
       format?: string;
       includeTimestamps?: boolean;
       includeConfidence?: boolean;
+      systemPrompt?: string;
     } = {}
   ): Promise<any> {
     
@@ -269,6 +271,11 @@ export class AudioService {
       formData.append('format', options.format || 'json');
       formData.append('include_timestamps', String(options.includeTimestamps !== false));
       formData.append('include_confidence', String(options.includeConfidence !== false));
+      
+      // Add system prompt if provided
+      if (options.systemPrompt) {
+        formData.append('system_prompt', options.systemPrompt);
+      }
 
       // Send to Python service
       const response = await axios.post(

@@ -302,8 +302,9 @@ class VoxtralEngine:
         return_timestamps: bool = True,
         return_confidence: bool = True,
         chunk_length_s: Optional[int] = None,
+        system_prompt: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Internal transcription method with MLX/PyTorch handling."""
+        """Internal transcription method with MLX/PyTorch handling and system prompt support."""
         if not self.is_loaded:
             raise RuntimeError("Model not loaded")
         
@@ -317,11 +318,11 @@ class VoxtralEngine:
             # Perform transcription based on engine
             if self.use_mlx:
                 result = await self._transcribe_mlx(
-                    audio_array, language, return_timestamps, return_confidence
+                    audio_array, language, return_timestamps, return_confidence, chunk_length_s, system_prompt
                 )
             else:
                 result = await self._transcribe_pytorch(
-                    audio_array, language, return_timestamps, return_confidence, chunk_length_s
+                    audio_array, language, return_timestamps, return_confidence, chunk_length_s, system_prompt
                 )
             
             # Track performance
@@ -381,8 +382,10 @@ class VoxtralEngine:
         language: Optional[str],
         return_timestamps: bool,
         return_confidence: bool,
+        chunk_length_s: Optional[int] = None,
+        system_prompt: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Transcribe using MLX backend with Apple Silicon optimization."""
+        """Transcribe using MLX backend with Apple Silicon optimization and system prompt support."""
         try:
             # Process audio features
             inputs = self.processor(
@@ -444,10 +447,15 @@ class VoxtralEngine:
         return_timestamps: bool,
         return_confidence: bool,
         chunk_length_s: Optional[int] = None,
+        system_prompt: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Transcribe using Voxtral's apply_transcrition_request API."""
+        """Transcribe using Voxtral's apply_transcrition_request API with system prompt support."""
         try:
             logger.info("Using Voxtral apply_transcrition_request API")
+            
+            # Use provided system prompt or default
+            effective_prompt = system_prompt or "You are a professional transcription assistant. Transcribe the audio exactly as spoken. Output only the transcription."
+            logger.info(f"Using system prompt: {effective_prompt[:100]}...")
             
             # Voxtral TRANSCRIPTION MODE - Testing minimal parameters first
             logger.info("Testing Voxtral with temperature=0.0 for transcription mode")
@@ -459,7 +467,8 @@ class VoxtralEngine:
                 language=language or "en",  # Keep language explicit for now
                 model_id=self.settings.MODEL_NAME,
                 sampling_rate=self.settings.SAMPLE_RATE,
-                return_tensors="pt"
+                return_tensors="pt",
+                system_prompt=effective_prompt  # Add system prompt support
             )
             
             logger.info(f"Voxtral processor result type: {type(result)}")
@@ -945,6 +954,7 @@ class VoxtralEngine:
                 language="en",  # Use default language
                 return_timestamps=request.include_timestamps,
                 return_confidence=True,
+                system_prompt=getattr(request, 'system_prompt', None),
             )
             
             # Process result into segments

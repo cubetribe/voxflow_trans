@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🧠 MAJOR FEATURE - VoxFlow v0.7 System-Prompt UI Implementation (2025-07-20)
+
+### 📅 **2025-07-20 14:30-15:00 CET** - System-Prompt UI Feature Implementation
+#### 🧠 Added - AI System Prompt Control System
+- **SystemPromptPanel Component**: Professional UI component with prompt presets, character counter, localStorage persistence
+- **TranscriptionOutput Component**: Advanced output display with multi-format export (TXT, JSON, SRT), copy functionality, expandable view
+- **Prompt Presets System**: 4 built-in presets (Standard Transcription, Meeting Summary, Interview Format, Technical Content)
+- **Real-time Integration**: System prompts automatically included in transcription requests with live result display
+
+#### 🔧 Backend System Prompt Support
+- **Voxtral Engine Enhancement**: Updated `_transcribe_pytorch` and `_transcribe_mlx` methods to accept and use system prompts
+- **API Model Updates**: Added `system_prompt` field to TranscriptionRequest and BatchTranscriptionRequest with 2000 character validation
+- **Node.js Gateway Integration**: Enhanced transcribeFile service with system prompt forwarding to Python service
+- **Production-Ready Validation**: Zod schemas with comprehensive input validation and error handling
+
+#### 🎯 Production-Ready Features
+- **Type Safety**: Full TypeScript coverage with proper optional parameter handling for `exactOptionalPropertyTypes`
+- **Input Validation**: 2000 character limits, sanitization, and format validation across all layers
+- **Error Handling**: Comprehensive validation at frontend, Node.js gateway, and Python service levels
+- **Performance Optimized**: localStorage persistence, efficient state management, minimal re-renders
+- **Security Compliant**: Input sanitization, length limits, proper error responses
+
+#### 🔨 Technical Improvements
+- **Fixed TypeScript Build Error**: Resolved `exactOptionalPropertyTypes` compatibility issue with proper undefined value filtering
+- **Updated Dependencies**: Upgraded supertest (6.3.4 → 7.1.4), ESLint (8.56.0 → 9.17.0), TypeScript ESLint plugins
+- **Removed Deprecated Types**: Eliminated @types/joi (joi provides own types)
+- **Documentation Updates**: Updated CLAUDE.md to reflect current frontend structure and Voxtral implementation details
+
 ### 🚀 MAJOR UPDATE - VoxFlow v0.6 Native Development Architecture (2025-07-20)
 
 ### 📅 **2025-07-20 08:30-08:45 CET** - Ultra-Clean Project Restructure

@@ -32,12 +32,22 @@ const upload = multer({
 });
 
 // Validation schemas
+const transcriptionRequestSchema = z.object({
+  fileId: z.string().min(1),
+  systemPrompt: z.string().max(2000).optional(),
+  language: z.string().optional(),
+  format: z.enum(['json', 'txt', 'srt', 'vtt']).optional(),
+  includeTimestamps: z.boolean().optional(),
+  includeConfidence: z.boolean().optional(),
+});
+
 const batchConfigSchema = z.object({
   outputDirectory: z.string().min(1),
   format: z.enum(['json', 'txt', 'srt', 'vtt']),
   includeTimestamps: z.boolean().default(true),
   includeConfidence: z.boolean().default(true),
   cleanupAfterProcessing: z.boolean().default(true),
+  systemPrompt: z.string().max(2000).optional(),
 });
 
 const fileIdsSchema = z.object({
@@ -224,51 +234,58 @@ apiRoutes.delete('/files/:id',
 // Transcription Routes
 apiRoutes.post('/transcribe/file',
   asyncHandler(async (req: Request, res: Response) => {
-    // Debug the entire request
-    logger.info(`Transcribe endpoint hit - Method: ${req.method}`);
-    logger.info(`Content-Type header: ${req.headers['content-type']}`);
-    logger.info(`Body is: ${JSON.stringify(req.body)}`);
-    logger.info(`Body type: ${typeof req.body}`);
-    logger.info(`Has fileId: ${req.body?.fileId ? 'YES' : 'NO'}`);
-    
-    // Also check if body parser worked
-    if (!req.body || Object.keys(req.body).length === 0) {
-      logger.error('Request body is empty - body parser may have failed');
-      res.status(400).json({
-        error: 'Request body is empty',
-        contentType: req.headers['content-type'],
-        method: req.method
-      });
-      return;
-    }
-    
-    const { fileId } = req.body;
-    
-    if (!fileId) {
-      logger.warn('Missing fileId in transcribe request');
-      res.status(400).json({
-        error: 'Missing required field: fileId',
-      });
-      return;
-    }
-    
+    // Validate request body
     try {
-      const result = await audioService.transcribeFile(fileId);
+      const validatedData = transcriptionRequestSchema.parse(req.body);
       
-      logger.info(`File transcription response for: ${fileId}`, {
-        hasText: !!result.text,
-        hasSegments: !!result.segments,
-        hasJobId: !!result.jobId,
-        keys: Object.keys(result),
-      });
-      
-      res.status(202).json(result);
-    } catch (error) {
-      logger.error(`File transcription failed for ${fileId}:`, error);
-      res.status(500).json({
-        error: 'Transcription failed',
-        fileId,
-        message: error instanceof Error ? error.message : 'Unknown error',
+      const { 
+        fileId, 
+        systemPrompt,
+        language,
+        format,
+        includeTimestamps,
+        includeConfidence 
+      } = validatedData;
+    
+      try {
+        // Filter out undefined values for exactOptionalPropertyTypes compatibility
+        const options: {
+          systemPrompt?: string;
+          language?: string;
+          format?: string;
+          includeTimestamps?: boolean;
+          includeConfidence?: boolean;
+        } = {};
+        
+        if (systemPrompt !== undefined) options.systemPrompt = systemPrompt;
+        if (language !== undefined) options.language = language;
+        if (format !== undefined) options.format = format;
+        if (includeTimestamps !== undefined) options.includeTimestamps = includeTimestamps;
+        if (includeConfidence !== undefined) options.includeConfidence = includeConfidence;
+        
+        const result = await audioService.transcribeFile(fileId, options);
+        
+        logger.info(`File transcription response for: ${fileId}`, {
+          hasText: !!result.text,
+          hasSegments: !!result.segments,
+          hasJobId: !!result.jobId,
+          keys: Object.keys(result),
+        });
+        
+        res.status(202).json(result);
+      } catch (error) {
+        logger.error(`File transcription failed for ${fileId}:`, error);
+        res.status(500).json({
+          error: 'Transcription failed',
+          fileId,
+          message: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    } catch (validationError) {
+      logger.error('Invalid transcription request:', validationError);
+      res.status(400).json({
+        error: 'Invalid request data',
+        details: validationError instanceof Error ? validationError.message : 'Validation failed',
       });
     }
   })

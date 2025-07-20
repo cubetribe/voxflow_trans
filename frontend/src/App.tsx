@@ -5,9 +5,11 @@ import HeroSection from './components/HeroSection';
 import StatusDashboard from './components/StatusDashboard';
 import FileManager from './components/FileManager';
 import ConfigPanel from './components/ConfigPanel';
+import SystemPromptPanel from './components/SystemPromptPanel';
+import TranscriptionOutput from './components/TranscriptionOutput';
 import { useSocket } from './hooks/useSocket';
 import { useSystemHealth } from './hooks/useSystemHealth';
-import { FileItem, SystemStatus, TranscriptionConfig } from './types';
+import { FileItem, SystemStatus, TranscriptionConfig, TranscriptionResult } from './types';
 
 function App() {
   const [files, setFiles] = useState<FileItem[]>([]);
@@ -16,8 +18,10 @@ function App() {
     outputDirectory: '/Users/username/Downloads',
     includeTimestamps: true,
     chunkSize: 30,
-    confidenceThreshold: 0.7
+    confidenceThreshold: 0.7,
+    systemPrompt: "You are a professional transcription assistant. Transcribe the audio exactly as spoken. Output only the transcription."
   });
+  const [transcriptionResults, setTranscriptionResults] = useState<TranscriptionResult[]>([]);
   
   const { socket, isConnected } = useSocket();
   const { systemStatus, isLoading: statusLoading } = useSystemHealth();
@@ -38,6 +42,19 @@ function App() {
             ? { ...file, progress: 100, status: 'completed', resultPath: data.resultPath }
             : file
         ));
+        
+        // Add transcription result if available
+        if (data.transcription) {
+          const result: TranscriptionResult = {
+            id: data.jobId,
+            text: data.transcription.text || data.transcription,
+            confidence: data.transcription.confidence,
+            timestamp: new Date().toISOString(),
+            fileName: data.fileName,
+            systemPromptUsed: config.systemPrompt
+          };
+          setTranscriptionResults(prev => [...prev, result]);
+        }
       });
 
       socket.on('job:error', (data) => {
@@ -60,6 +77,14 @@ function App() {
 
   const handleConfigChange = (newConfig: Partial<TranscriptionConfig>) => {
     setConfig(prev => ({ ...prev, ...newConfig }));
+  };
+
+  const handleSystemPromptChange = (prompt: string) => {
+    setConfig(prev => ({ ...prev, systemPrompt: prompt }));
+  };
+
+  const handleClearTranscriptions = () => {
+    setTranscriptionResults([]);
   };
 
   return (
@@ -93,6 +118,11 @@ function App() {
               isConnected={isConnected}
             />
             <ConfigPanel config={config} onChange={handleConfigChange} />
+            <SystemPromptPanel onPromptChange={handleSystemPromptChange} />
+            <TranscriptionOutput 
+              results={transcriptionResults}
+              onClear={handleClearTranscriptions}
+            />
           </div>
         </div>
       </main>

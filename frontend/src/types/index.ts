@@ -47,6 +47,7 @@ export interface TranscriptionConfig {
   includeTimestamps: boolean;
   chunkSize: number;
   confidenceThreshold: number;
+  systemPrompt?: string;
 }
 
 export interface ProgressData {
@@ -56,4 +57,26 @@ export interface ProgressData {
   currentChunk?: number;
   totalChunks?: number;
   timeRemaining?: number;
+}
+
+export interface TranscriptionResult {
+  id: string;
+  text: string;
+  confidence?: number;
+  timestamp?: string;
+  fileName?: string;
+  format?: string;
+  systemPromptUsed?: string;
+}
+
+export interface TranscriptionRequest {
+  fileId: string;
+  config: TranscriptionConfig;
+  systemPrompt?: string;
+}
+
+export interface BatchTranscriptionRequest {
+  fileIds: string[];
+  config: TranscriptionConfig;
+  systemPrompt?: string;
 }
