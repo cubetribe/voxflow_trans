@@ -11,22 +11,28 @@
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5+-3178C6.svg)](https://typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB.svg)](https://reactjs.org/)
-[![Version](https://img.shields.io/badge/Version-0.9-brightgreen.svg)](https://github.com/your-repo/releases)
+[![Version](https://img.shields.io/badge/Version-0.9.1-brightgreen.svg)](https://github.com/your-repo/releases)
 
-[🚀 Quick Start](#-quick-start) • [📖 Documentation](#-documentation) • [🛠️ Development](#️-development) • [🆕 Version 0.9](#-version-09-highlights)
+[🚀 Quick Start](#-quick-start) • [📖 Documentation](#-documentation) • [🛠️ Development](#️-development) • [🆕 Version 0.9.1](#-version-091-highlights)
 
 </div>
 
-## 🆕 Version 0.9 Highlights
+## 🆕 Version 0.9.1 Highlights
 
-### 🎯 **Critical Production Fixes**
-- **Dynamic Token Limits**: Eliminated text truncation for long audio files  
-- **System Prompt Integration**: AI guidance for specialized transcription contexts
-- **Improved Generation Parameters**: Repetition penalty, length penalty, early stopping
-- **Truncation Detection**: Production-grade logging for quality assurance
-- **Dual Engine Support**: Consistent behavior across PyTorch and MLX backends
+### 🎯 **Functional Chunk-Size Control**
+- **3-Level Chunk Size Selector**: "Klein | Mittel | Groß" buttons for memory optimization
+  - **Small (3 min)**: Memory-constrained systems
+  - **Medium (5 min)**: Optimal balance (default)
+  - **Large (10 min)**: Maximum performance
+- **Production-Ready Integration**: Full end-to-end parameter flow with comprehensive error handling
+- **Visual Design**: Purple highlight with minute indicators for clear user feedback
 
-### 🚀 **Performance Breakthroughs**
+### 🛡️ **Enhanced Quality Assurance**
+- **Comprehensive Validation**: Zod schema validation with detailed error messages
+- **Integration Testing**: Real audio file validation with German transcription verification
+- **Backward Compatibility**: Seamless operation for existing workflows
+
+### 🚀 **Performance & Stability**
 - **Apple Silicon Optimization**: Native MPS with Metal Performance Shaders
 - **Intelligent Chunking**: Preserves audio endings with smart overlap handling
 - **Memory Management**: Stream-based processing for 2+ hour files

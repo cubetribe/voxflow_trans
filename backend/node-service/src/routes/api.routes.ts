@@ -39,6 +39,7 @@ const transcriptionRequestSchema = z.object({
   format: z.enum(['json', 'txt', 'srt', 'vtt']).optional(),
   includeTimestamps: z.boolean().optional(),
   includeConfidence: z.boolean().optional(),
+  chunkSizeMode: z.enum(['small', 'medium', 'large']).optional(),
 });
 
 const batchConfigSchema = z.object({
@@ -48,6 +49,7 @@ const batchConfigSchema = z.object({
   includeConfidence: z.boolean().default(true),
   cleanupAfterProcessing: z.boolean().default(true),
   systemPrompt: z.string().max(2000).optional(),
+  chunkSizeMode: z.enum(['small', 'medium', 'large']).optional(),
 });
 
 const fileIdsSchema = z.object({
@@ -244,7 +246,8 @@ apiRoutes.post('/transcribe/file',
         language,
         format,
         includeTimestamps,
-        includeConfidence 
+        includeConfidence,
+        chunkSizeMode
       } = validatedData;
     
       try {
@@ -255,6 +258,7 @@ apiRoutes.post('/transcribe/file',
           format?: string;
           includeTimestamps?: boolean;
           includeConfidence?: boolean;
+          chunkSizeMode?: 'small' | 'medium' | 'large';
         } = {};
         
         if (systemPrompt !== undefined) options.systemPrompt = systemPrompt;
@@ -262,6 +266,7 @@ apiRoutes.post('/transcribe/file',
         if (format !== undefined) options.format = format;
         if (includeTimestamps !== undefined) options.includeTimestamps = includeTimestamps;
         if (includeConfidence !== undefined) options.includeConfidence = includeConfidence;
+        if (chunkSizeMode !== undefined) options.chunkSizeMode = chunkSizeMode;
         
         const result = await audioService.transcribeFile(fileId, options);
         

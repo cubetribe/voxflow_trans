@@ -115,18 +115,27 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, onChange }) => {
         {/* Chunk Size */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Chunk Size (seconds)
+            Chunk Size
           </label>
-          <div className="flex items-center space-x-4">
-            <input
-              type="range"
-              min="10"
-              max="60"
-              value={config.chunkSize}
-              onChange={(e) => onChange({ chunkSize: parseInt(e.target.value) })}
-              className="flex-1 h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
-            />
-            <span className="text-white text-sm w-8">{config.chunkSize}s</span>
+          <div className="flex space-x-2">
+            {[
+              { key: 'small', label: 'Klein', minutes: 3 },
+              { key: 'medium', label: 'Mittel', minutes: 5 },
+              { key: 'large', label: 'Groß', minutes: 10 }
+            ].map(({ key, label, minutes }) => (
+              <button
+                key={key}
+                onClick={() => onChange({ chunkSizeMode: key as 'small' | 'medium' | 'large' })}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  config.chunkSizeMode === key
+                    ? 'bg-purple-600 text-white border-2 border-purple-400'
+                    : 'bg-white/10 text-gray-300 border-2 border-white/20 hover:bg-white/20'
+                }`}
+              >
+                <div>{label}</div>
+                <div className="text-xs opacity-70">({minutes} min)</div>
+              </button>
+            ))}
           </div>
         </div>
 

@@ -27,6 +27,7 @@ async def transcribe_file(
     include_timestamps: bool = Form(True),
     include_confidence: bool = Form(True),
     system_prompt: Optional[str] = Form(None),
+    chunk_duration_minutes: Optional[int] = Form(None),
 ) -> TranscriptionResponse:
     """
     Transcribe an uploaded audio file.
@@ -80,6 +81,12 @@ async def transcribe_file(
         
         logger.info(f"Processing file: {file.filename}, size: {len(content)} bytes")
         
+        # Create processing config with custom chunk size if provided
+        from app.models.transcription import ProcessingConfig
+        processing_config = ProcessingConfig()
+        if chunk_duration_minutes is not None:
+            processing_config.chunk_duration_minutes = chunk_duration_minutes
+        
         # Create transcription request
         transcription_request = TranscriptionRequest(
             audio_data=content,
@@ -89,6 +96,7 @@ async def transcribe_file(
             include_timestamps=include_timestamps,
             include_confidence=include_confidence,
             system_prompt=system_prompt,
+            processing_config=processing_config,
         )
         
         # Process transcription

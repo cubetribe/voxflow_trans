@@ -45,7 +45,7 @@ export interface TranscriptionConfig {
   outputFormat: 'json' | 'txt' | 'srt' | 'vtt';
   outputDirectory: string;
   includeTimestamps: boolean;
-  chunkSize: number;
+  chunkSizeMode: 'small' | 'medium' | 'large';
   confidenceThreshold: number;
   systemPrompt?: string;
   language?: string;

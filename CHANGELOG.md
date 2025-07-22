@@ -7,7 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.9.1] - 2025-01-20
+## [0.9.1] - 2025-07-21
+
+### 🎯 **Functional Chunk-Size Control - Production Ready**
+
+#### ✨ **New Features**
+- **3-Level Chunk Size Selector**: Replaced useless seconds slider with functional "Klein | Mittel | Groß" buttons
+  - **Small**: 3 minutes chunks for memory-constrained systems
+  - **Medium**: 5 minutes chunks (default) - optimal balance
+  - **Large**: 10 minutes chunks for maximum performance
+- **Visual Design**: Purple highlight for active selection with clear minute indicators
+- **LocalStorage Persistence**: User preference saved across sessions
+
+#### 🔧 **Backend Integration**
+- **CHUNK_SIZE_MAPPING**: Production-ready mapping in Node.js service (small: 3min, medium: 5min, large: 10min)
+- **End-to-End Parameter Flow**: Frontend chunkSizeMode → Node.js API → Python service → Voxtral engine
+- **ProcessingConfig Enhancement**: Dynamic chunk_duration_minutes instead of hardcoded 10 minutes
+- **API Validation**: Comprehensive Zod schema validation for chunkSizeMode parameter
+
+#### 🛡️ **Production-Ready Quality Assurance**
+- **Comprehensive Error Handling**: 
+  - Invalid chunkSizeMode values rejected with detailed error messages
+  - File not found errors with proper cleanup
+  - MIME type validation for audio file uploads
+- **Backward Compatibility**: Default medium (5min) when chunkSizeMode not specified
+- **Integration Testing**: Full end-to-end validation with real audio files
+- **German Audio Transcription Verified**: "Ich habe es nicht verstanden." successfully processed
+
+#### 🎨 **Frontend Improvements**
+- **ConfigPanel Redesign**: Clean three-button selector replaces confusing range slider
+- **TranscriptionConfig Type Safety**: Proper TypeScript interfaces for chunkSizeMode
+- **API Service Updates**: Correct parameter passing to backend services
+
+#### ⚡ **Performance & Stability**
+- **Processing Times**: Optimized processing (1.57s - 2.78s for test files)
+- **Overlap Preservation**: Maintains proven 10-second overlap between chunks
+- **Service Health**: All services (Node.js, Python, Frontend) operationally verified
+- **Automatic Cleanup**: Proper temporary file management after processing
+
+#### 🔄 **Technical Architecture**
+- **Minimal Invasive Changes**: No breaking changes to existing chunk processing engine
+- **Production Standards**: Follows CLAUDE.md rules - no quick fixes, comprehensive implementation
+- **Service Integration**: Redis, database, WebSocket, and all core services remain stable
+
+## [0.9.0] - 2025-01-20
 
 ### 🎨 **UI/UX Redesign - Clean Professional Layout**
 

@@ -81,7 +81,7 @@ export const startTranscription = async (
       outputFormat: config.outputFormat,
       outputDirectory: config.outputDirectory,
       includeTimestamps: config.includeTimestamps,
-      chunkSize: config.chunkSize,
+      chunkSizeMode: config.chunkSizeMode,
       confidenceThreshold: config.confidenceThreshold,
       systemPrompt: config.systemPrompt,
       language: config.language,

@@ -17,7 +17,7 @@ function App() {
     outputFormat: 'json',
     outputDirectory: '/Users/username/Downloads',
     includeTimestamps: true,
-    chunkSize: 30,
+    chunkSizeMode: 'medium',
     confidenceThreshold: 0.7,
     systemPrompt: "Sie sind ein professioneller Transkriptions-Assistent. Transkribieren Sie das Audio exakt wie gesprochen in der ORIGINAL-SPRACHE. Falls Deutsch gesprochen wird, geben Sie die Transkription auf DEUTSCH aus. Achten Sie auf deutsche Grammatik, Umlaute (ä, ö, ü, ß) und regionale Dialekte. Ausgabe: Nur die Transkription in Originalsprache.",
     language: 'de'

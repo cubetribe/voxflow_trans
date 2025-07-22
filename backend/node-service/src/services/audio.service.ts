@@ -21,6 +21,7 @@ export interface BatchUploadConfig {
   includeConfidence: boolean;
   cleanupAfterProcessing: boolean;
   systemPrompt?: string;
+  chunkSizeMode?: 'small' | 'medium' | 'large';
 }
 
 export class AudioService {
@@ -252,6 +253,7 @@ export class AudioService {
       includeTimestamps?: boolean;
       includeConfidence?: boolean;
       systemPrompt?: string;
+      chunkSizeMode?: 'small' | 'medium' | 'large';
     } = {}
   ): Promise<any> {
     
@@ -264,6 +266,13 @@ export class AudioService {
       // Read file data
       const fileData = await fs.readFile(file.tempPath);
 
+      // Chunk size mapping
+      const CHUNK_SIZE_MAPPING = {
+        'small': 3,    // 3 minutes
+        'medium': 5,   // 5 minutes (DEFAULT)
+        'large': 10    // 10 minutes
+      };
+
       // Create form data for upload to Python service
       const formData = new FormData();
       formData.append('file', fileData, file.filename);
@@ -271,6 +280,12 @@ export class AudioService {
       formData.append('format', options.format || 'json');
       formData.append('include_timestamps', String(options.includeTimestamps !== false));
       formData.append('include_confidence', String(options.includeConfidence !== false));
+      
+      // Add chunk size mode if provided
+      if (options.chunkSizeMode) {
+        const chunkMinutes = CHUNK_SIZE_MAPPING[options.chunkSizeMode];
+        formData.append('chunk_duration_minutes', String(chunkMinutes));
+      }
       
       // Add system prompt if provided
       if (options.systemPrompt) {
