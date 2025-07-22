@@ -136,6 +136,16 @@ class Settings(BaseSettings):
         description="File upload timeout in seconds"
     )
     
+    # Service Communication
+    NODE_SERVICE_URL: str = Field(
+        default="http://localhost:3000",
+        description="Node.js service base URL for progress notifications"
+    )
+    ENABLE_PROGRESS_NOTIFICATIONS: bool = Field(
+        default=True,
+        description="Enable real-time progress notifications to Node.js service"
+    )
+    
     # Redis (optional)
     REDIS_URL: Optional[str] = Field(
         default=None,

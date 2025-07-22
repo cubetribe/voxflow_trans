@@ -442,3 +442,65 @@ apiRoutes.get('/config/cleanup/stats',
     }
   })
 );
+
+// Internal Routes (for inter-service communication)
+const internalProgressSchema = z.object({
+  jobId: z.string().min(1),
+  status: z.enum(['started', 'processing', 'completed', 'failed', 'cancelled']),
+  progress_percent: z.number().min(0).max(100),
+  current_chunk: z.number().optional(),
+  total_chunks: z.number().optional(),
+  processing_time: z.number().optional(),
+  error_message: z.string().optional(),
+  timestamp: z.string().optional(),
+  // Job started fields
+  filename: z.string().optional(),
+  duration_minutes: z.number().optional(),
+  chunk_duration_minutes: z.number().optional(),
+  // Chunk completion fields  
+  chunk_processing_time: z.number().optional(),
+  chunk_confidence: z.number().optional(),
+  chunk_text_preview: z.string().optional(),
+  // Job completion fields
+  total_segments: z.number().optional(),
+  full_text_length: z.number().optional(),
+  confidence: z.number().optional(),
+  chunk_count: z.number().optional(),
+});
+
+apiRoutes.post('/internal/progress',
+  validateBody(internalProgressSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const progressData = req.body;
+    const { jobId, ...data } = progressData;
+    
+    try {
+      // Import websocket service dynamically to avoid circular imports
+      const { websocketService } = await import('@/services/websocket.service');
+      
+      // Emit progress update via WebSocket to all connected clients
+      websocketService.emitJobProgress(jobId, data);
+      
+      logger.debug(`Progress notification received for job ${jobId}`, {
+        status: data.status,
+        progress: data.progress_percent,
+        currentChunk: data.current_chunk,
+        totalChunks: data.total_chunks,
+      });
+      
+      res.json({ 
+        success: true, 
+        message: 'Progress notification broadcasted',
+        jobId 
+      });
+      
+    } catch (error) {
+      logger.error(`Failed to broadcast progress for job ${jobId}:`, error);
+      res.status(500).json({
+        error: 'Failed to broadcast progress notification',
+        jobId,
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  })
+);

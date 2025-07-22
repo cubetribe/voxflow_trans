@@ -43,6 +43,7 @@ from app.models.transcription import (
     TranscriptionSegment, StreamingSession, AudioChunk
 )
 from app.services.cleanup_service import cleanup_service
+from app.services.progress_notifier import progress_notifier
 
 
 class VoxtralEngine:
@@ -534,11 +535,11 @@ class VoxtralEngine:
             
             # Calculate dynamic token limit based on audio duration
             audio_duration_seconds = len(audio) / self.settings.SAMPLE_RATE
-            # Conservative estimate: ~3 tokens per second of audio
-            estimated_tokens = max(int(audio_duration_seconds * 3), 50)  # Minimum 50 tokens
-            max_tokens = min(estimated_tokens + 100, 2048)  # Maximum 2048 tokens, add 100 token buffer
+            # More generous estimate for production: ~5 tokens per second + larger buffer for complex content
+            estimated_tokens = max(int(audio_duration_seconds * 5), 100)  # Minimum 100 tokens
+            max_tokens = min(estimated_tokens + 300, 2048)  # Maximum 2048 tokens, add 300 token buffer for safety
             
-            logger.info(f"MLX Audio duration: {audio_duration_seconds:.1f}s, using max_tokens: {max_tokens}")
+            logger.info(f"MLX Audio duration: {audio_duration_seconds:.1f}s, using max_tokens: {max_tokens} (estimated: {estimated_tokens}, buffer: 300)")
             
             # Generate transcription with optimized prompt
             prompt = f"<|startoftranscript|><|{language or 'en'}|><|transcribe|>"
@@ -640,12 +641,12 @@ class VoxtralEngine:
             
             # Calculate dynamic token limit based on audio duration
             audio_duration_seconds = len(audio) / self.settings.SAMPLE_RATE
-            # Conservative estimate: ~3 tokens per second of audio (accounts for various speech rates)
-            # Add buffer for longer content and safety margin
-            estimated_tokens = max(int(audio_duration_seconds * 3), 50)  # Minimum 50 tokens
-            max_tokens = min(estimated_tokens + 100, 2048)  # Maximum 2048 tokens, add 100 token buffer
+            # More generous estimate for production: ~5 tokens per second + larger buffer for complex content
+            # This accounts for dense content, technical terms, proper nouns, and safety margin
+            estimated_tokens = max(int(audio_duration_seconds * 5), 100)  # Minimum 100 tokens
+            max_tokens = min(estimated_tokens + 300, 2048)  # Maximum 2048 tokens, add 300 token buffer for safety
             
-            logger.info(f"Audio duration: {audio_duration_seconds:.1f}s, using max_new_tokens: {max_tokens}")
+            logger.info(f"Audio duration: {audio_duration_seconds:.1f}s, using max_new_tokens: {max_tokens} (estimated: {estimated_tokens}, buffer: 300)")
             
             # Generate transcription - use the actual model, not pipeline
             with torch.no_grad():
@@ -843,6 +844,14 @@ class VoxtralEngine:
                 
                 logger.info(f"Starting transcription: {request.filename} ({audio_info['duration_minutes']:.2f} min)")
                 
+                # Send job started notification
+                await progress_notifier.notify_job_started(job_id, {
+                    "filename": request.filename,
+                    "duration_minutes": duration_minutes,
+                    "total_chunks": estimated_chunks,
+                    "chunk_duration_minutes": chunk_duration
+                })
+                
                 # Process audio chunks
                 all_segments = []
                 chunk_results = []
@@ -877,6 +886,18 @@ class VoxtralEngine:
                     job_progress.progress_percent = (completed_chunks / job_progress.total_chunks) * 100
                     job_progress.current_chunk = completed_chunks
                     job_progress.chunks_completed = chunk_results
+                    
+                    # Send progress notification to Node.js service
+                    await progress_notifier.notify_chunk_completed(
+                        job_id,
+                        chunk.index,
+                        job_progress.total_chunks,
+                        {
+                            "processing_time": chunk_result.processing_time,
+                            "confidence": chunk_result.confidence,
+                            "text": " ".join(seg.text for seg in chunk_result.segments if seg.text.strip())
+                        }
+                    )
                     
                     cleanup_service.update_session_activity(job_id)
                     
@@ -913,6 +934,15 @@ class VoxtralEngine:
                 self.total_inferences += 1
                 self.total_processing_time += processing_time
                 
+                # Send job completed notification
+                await progress_notifier.notify_job_completed(job_id, {
+                    "processing_time": processing_time,
+                    "segments": len(all_segments),
+                    "full_text": " ".join(segment.text for segment in all_segments if segment.text.strip()),
+                    "confidence": response.confidence,
+                    "chunk_count": len(chunk_results)
+                })
+                
                 # Schedule cleanup
                 await cleanup_service.schedule_delayed_cleanup(job_id, 300)  # 5 minutes
                 
@@ -923,6 +953,13 @@ class VoxtralEngine:
         except Exception as e:
             job_progress.status = ProcessingStatus.FAILED
             job_progress.error_message = str(e)
+            
+            # Send job failed notification
+            await progress_notifier.notify_job_failed(
+                job_id, 
+                str(e), 
+                job_progress.progress_percent
+            )
             
             # Immediate cleanup on failure
             await cleanup_service.cleanup_session(job_id, force=True)
@@ -965,6 +1002,10 @@ class VoxtralEngine:
         
         if job_id in self.active_jobs:
             self.active_jobs[job_id].status = ProcessingStatus.CANCELLED
+            
+            # Send job cancelled notification
+            await progress_notifier.notify_job_cancelled(job_id)
+            
             await cleanup_service.cleanup_session(job_id, force=True)
             logger.info(f"Cancelled job: {job_id}")
             return True
@@ -1076,8 +1117,8 @@ class VoxtralEngine:
         await self.initialize()
     
     async def cleanup(self) -> None:
-        """Clean up engine resources with comprehensive cleanup."""
-        logger.info("Cleaning up VoxFlow Voxtral Engine...")
+        """Clean up engine resources with comprehensive cleanup including GPU memory."""
+        logger.info("🛑 Cleaning up VoxFlow Voxtral Engine...")
         
         try:
             # Cancel all active jobs
@@ -1091,39 +1132,81 @@ class VoxtralEngine:
             # Stop cleanup service
             await cleanup_service.stop()
             
-            # Clean up models
+            # Clean up models with proper GPU memory cleanup
+            logger.info("🧹 Cleaning up models and GPU memory...")
+            
             if self.model is not None:
                 if hasattr(self.model, 'model') and hasattr(self.model.model, 'cpu'):
-                    self.model.model.cpu()
+                    try:
+                        # Move model to CPU before deletion to free GPU memory
+                        self.model.model.cpu()
+                        logger.debug("Model moved to CPU")
+                    except Exception as e:
+                        logger.warning(f"Failed to move model to CPU: {e}")
                 del self.model
                 self.model = None
+                logger.debug("Model deleted")
             
             if self.processor is not None:
                 del self.processor
                 self.processor = None
+                logger.debug("Processor deleted")
             
             if self.mlx_model is not None:
                 del self.mlx_model
                 self.mlx_model = None
+                logger.debug("MLX model deleted")
             
             if self.mlx_tokenizer is not None:
                 del self.mlx_tokenizer
                 self.mlx_tokenizer = None
+                logger.debug("MLX tokenizer deleted")
             
-            # Force garbage collection
-            gc.collect()
+            # Force Python garbage collection multiple times
+            for i in range(3):
+                collected = gc.collect()
+                logger.debug(f"Garbage collection {i+1}/3: collected {collected} objects")
             
-            # Device-specific cleanup
+            # Device-specific cleanup with enhanced MPS support
             if self.device == "mps":
-                torch.mps.empty_cache()
+                logger.info("🍎 Performing Apple Silicon MPS GPU memory cleanup...")
+                try:
+                    torch.mps.empty_cache()
+                    logger.info("✅ MPS cache emptied successfully")
+                    
+                    # Additional MPS-specific cleanup
+                    if hasattr(torch.mps, 'synchronize'):
+                        torch.mps.synchronize()
+                        logger.debug("MPS synchronized")
+                    
+                    # Force another garbage collection after cache clear
+                    gc.collect()
+                    logger.debug("Post-MPS garbage collection completed")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Failed to empty MPS cache: {e}")
+                    
             elif self.device == "cuda":
-                torch.cuda.empty_cache()
+                logger.info("🟢 Performing CUDA GPU memory cleanup...")
+                try:
+                    torch.cuda.empty_cache()
+                    torch.cuda.synchronize()
+                    logger.info("✅ CUDA cache emptied successfully")
+                except Exception as e:
+                    logger.error(f"❌ Failed to empty CUDA cache: {e}")
             
+            # Final state reset
             self.is_loaded = False
-            logger.info("✅ VoxFlow Voxtral Engine cleanup completed")
+            self.active_jobs.clear()
+            self.streaming_sessions.clear()
+            self.batch_jobs.clear()
+            
+            logger.info("✅ VoxFlow Voxtral Engine cleanup completed successfully")
             
         except Exception as e:
-            logger.error(f"Error during cleanup: {e}")
+            logger.error(f"❌ Error during cleanup: {e}")
+            # Even if cleanup partially fails, mark as unloaded
+            self.is_loaded = False
     
     def _get_device(self) -> str:
         """Determine the best available device - legacy compatibility."""

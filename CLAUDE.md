@@ -47,15 +47,16 @@ VoxFlow is a production-ready voice transcription platform using Mistral's Voxtr
 - **Improved Generation**: Repetition penalty (1.1), length penalty (1.0), early stopping for quality
 - **API Parameter Fixes**: Resolved missing language parameter and Pydantic model validation errors
 
-### 📝 **Version 0.9.1 Status - COMPLETED**
+### 📝 **Version 0.9.1.3 Status - CRITICAL FIXES COMPLETED**
 - **Feature Complete**: ✅ Functional chunk-size control implemented and tested
 - **Quality Assurance**: ✅ Production-ready validation with real audio files
 - **Integration Testing**: ✅ End-to-end validation Frontend → Node.js → Python → Voxtral
-- **Documentation Updated**: ✅ README.md, CHANGELOG.md, CLAUDE.md updated for v0.9.1
-- **Git Status**: ✅ **COMMITTED & PUSHED** - Commit: dc1b3ad (10 files changed)
-- **Error Handling**: ✅ Comprehensive validation and graceful error recovery
-- **GitHub Release**: ✅ Successfully pushed to cubetribe/voxflow_trans repository
-- **System Status**: ✅ All services operational (Node.js:3000, Python:8000, Frontend:5173, Redis:6379)
+- **🔴 CRITICAL FIX**: ✅ Token truncation resolved - 5min audio now fully transcribed 
+- **🔧 Math Fix**: ✅ Chunk count calculation corrected (math.ceil vs int)
+- **🎨 Progress Panel**: ✅ Real-time WebSocket progress tracking implemented
+- **Documentation Updated**: ✅ README.md, CHANGELOG.md, CLAUDE.md updated for v0.9.1.3
+- **Git Status**: 🔄 Ready for commit v0.9.1.3 (critical fixes)
+- **System Status**: ⚠️ Services stopped due to GPU overload - requires restart
 
 ### 🎯 **Version 0.9.1 Implementation Summary**
 - **Chunk-Size Control**: Klein(3min) | Mittel(5min) | Groß(10min) selector
@@ -65,12 +66,14 @@ VoxFlow is a production-ready voice transcription platform using Mistral's Voxtr
 - **Production Testing**: German audio transcription verified ("Ich habe es nicht verstunden.")
 - **Performance**: Processing times 1.57s-2.78s, overlap preserved at 10 seconds
 
-### 🧪 **Current Test Status**
-- **Ready for Large File Testing**: System stable and all services operational
-- **Test Audio Files Available**: /Audio-TEST/ directory with ElevenLabs samples
-- **Chunk-Size Testing**: Small/Medium/Large modes validated with short files
-- **Next Phase**: Testing with large audio files to validate chunk processing at scale
-- **System Recovery**: State documented in CLAUDE.md in case of system restart
+### 🧪 **Version 0.9.1.3 Test Results**
+- **TOKEN TRUNCATION FIX**: ✅ 5min German audio fully transcribed (no cutoff at "Lass uns")
+- **CHUNK COUNT FIX**: ✅ Correct 2/2 chunk processing instead of 2/1
+- **New Token Calculation**: 5 tokens/sec + 300 buffer = 1200 tokens (vs 640 previous)
+- **Test Validation**: "Liebe Leserin, lieber Leser..." complete transcription
+- **Performance**: Processing stable, proper overlap handling
+- **REMAINING ISSUES**: WebSocket status updates, GPU memory cleanup after stop
+- **System Recovery**: All services cleanly stopped, ready for restart
 
 ## Development Commands
 
@@ -203,7 +206,7 @@ class VoxtralConfig:
 - **Device Setting**: DEVICE=mps mandatory for Apple Silicon (set before any imports)
 - **Format Requirements**: Audio and format must be passed as lists to the API
 - **Dependencies**: Requires GitHub version of Transformers for latest Voxtral support
-- **Dynamic Token Limits**: Calculate based on audio duration (3 tokens/second + 100 buffer, max 2048)
+- **Dynamic Token Limits**: Calculate based on audio duration (5 tokens/second + 300 buffer, max 2048) - FIXED v0.9.1.3
 - **Generation Parameters**: Use repetition_penalty=1.1, length_penalty=1.0, early_stopping=True
 - **System Prompts**: Support 2000 character system prompts for specialized transcription contexts
 
@@ -457,6 +460,29 @@ frontend/frontend_service.log
 backend/node-service/logs/
 backend/python-service/logs/
 ```
+
+## 🚨 **CRITICAL STATUS UPDATE - 2025-07-22**
+
+### GPU OVERLOAD ISSUE
+- **Problem**: GPU stuck at 100% usage for 10+ minutes after stopping all VoxFlow services
+- **Services Stopped**: ✅ Python (uvicorn), Node.js, Redis, all VoxFlow processes killed
+- **GPU Memory**: Still occupied by Voxtral model - requires system restart or manual cleanup
+- **System Impact**: M4 Max GPU not releasing memory despite process termination
+
+### COMPLETED FIXES (v0.9.1.3)
+1. **🔴 TOKEN TRUNCATION**: Fixed max_new_tokens calculation (87% increase: 640→1200 tokens)
+2. **🔧 CHUNK PROCESSING**: Fixed math.ceil() vs int() bug in chunk count calculation  
+3. **🎨 PROGRESS PANEL**: Implemented real-time WebSocket progress tracking
+4. **✅ VALIDATION**: 5min German audio fully transcribed without truncation
+
+### PENDING CRITICAL TASKS
+1. **GPU Memory Cleanup**: Implement torch.mps.empty_cache() on service shutdown
+2. **WebSocket Events**: Python→Node.js progress updates missing
+3. **Smart Overlap Testing**: Multi-chunk overlap removal validation
+4. **Production Commit**: Git commit v0.9.1.3 with all critical fixes
+
+### RESTART RECOMMENDATION
+**System restart recommended** to fully clear GPU memory before continuing development.
 
 ## important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
