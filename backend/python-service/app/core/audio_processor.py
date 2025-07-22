@@ -96,11 +96,23 @@ class AudioProcessor:
         total_duration = len(audio_segment)
         chunk_count = 0
         
+        # CRITICAL FIX: Ensure no gaps between chunks
+        # Use overlap in a way that guarantees continuous coverage
         for start_ms in range(0, total_duration, chunk_duration_ms - overlap_ms):
             end_ms = min(start_ms + chunk_duration_ms, total_duration)
             
-            # Extract chunk with overlap
-            chunk_audio = audio_segment[start_ms:end_ms]
+            # ENSURE OVERLAP COVERS ANY GAPS: if this is not the first chunk,
+            # extend the start back by overlap to ensure no gaps
+            actual_start_ms = start_ms
+            if chunk_count > 0:
+                # Extend start back to overlap with previous chunk
+                actual_start_ms = max(0, start_ms - overlap_ms)
+            
+            # Extract chunk with guaranteed overlap coverage
+            chunk_audio = audio_segment[actual_start_ms:end_ms]
+            
+            # Update start_time to reflect actual audio start
+            actual_start_time = actual_start_ms / 1000.0
             
             # Skip very short chunks unless it's the final chunk (to preserve ending)
             is_final_chunk = end_ms >= total_duration
@@ -115,7 +127,7 @@ class AudioProcessor:
             
             # Process individual chunk
             chunk = await self._process_single_chunk(
-                chunk_audio, chunk_count, session_id, config, start_ms / 1000
+                chunk_audio, chunk_count, session_id, config, actual_start_time
             )
             
             yield chunk
@@ -287,6 +299,76 @@ class AudioProcessor:
         logger.debug(f"Saved processed chunk: {chunk_path}")
         
         return chunk_path
+    
+    async def get_chunk_files(self, session_id: str) -> List[Path]:
+        """Get all chunk files for a session (for Two-Phase Processing)."""
+        
+        if session_id not in self.temp_files:
+            return []
+        
+        # Filter only chunk files (not original file)
+        chunk_files = [
+            path for path in self.temp_files[session_id]
+            if path.name.startswith('chunk_') and path.suffix == '.wav'
+        ]
+        
+        # Sort by chunk index
+        chunk_files.sort(key=lambda p: int(p.stem.split('_')[1]))
+        
+        logger.debug(f"Found {len(chunk_files)} chunk files for session {session_id}")
+        return chunk_files
+    
+    async def concatenate_chunks(self, session_id: str) -> Optional[Path]:
+        """
+        Concatenate all audio chunks into a single file for Two-Phase Processing.
+        
+        Args:
+            session_id: Session identifier
+            
+        Returns:
+            Path to concatenated audio file or None if no chunks found
+        """
+        
+        chunk_files = await self.get_chunk_files(session_id)
+        if len(chunk_files) <= 1:
+            logger.info(f"Session {session_id}: Only {len(chunk_files)} chunks, skipping concatenation")
+            return None
+        
+        try:
+            logger.info(f"Concatenating {len(chunk_files)} audio chunks for session {session_id}")
+            
+            # Load and concatenate all chunks
+            combined_audio = AudioSegment.empty()
+            
+            for i, chunk_path in enumerate(chunk_files):
+                try:
+                    chunk_audio = AudioSegment.from_wav(str(chunk_path))
+                    combined_audio += chunk_audio
+                    logger.debug(f"Added chunk {i}: {chunk_path.name} ({len(chunk_audio)}ms)")
+                except Exception as e:
+                    logger.error(f"Failed to load chunk {chunk_path}: {e}")
+                    raise
+            
+            # Save concatenated audio
+            temp_dir = settings.temp_path / session_id
+            combined_path = temp_dir / "combined_audio.wav"
+            
+            await asyncio.to_thread(
+                combined_audio.export,
+                str(combined_path),
+                format="wav"
+            )
+            
+            self.temp_files[session_id].append(combined_path)
+            
+            duration_minutes = len(combined_audio) / 1000 / 60
+            logger.info(f"Audio concatenation completed: {duration_minutes:.2f} minutes -> {combined_path}")
+            
+            return combined_path
+            
+        except Exception as e:
+            logger.error(f"Failed to concatenate chunks for session {session_id}: {e}")
+            return None
     
     async def _cleanup_session(self, session_id: str) -> None:
         """Clean up all temporary files for a session."""

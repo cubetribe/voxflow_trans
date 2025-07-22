@@ -338,14 +338,15 @@ start_python_service() {
     
     # Start service in background
     echo "   🚀 Starting Voxtral service on port 8000..."
-    nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload > python_service.log 2>&1 &
+    # Use --reload only in development, remove for production stability
+    nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 > python_service.log 2>&1 &
     PYTHON_PID=$!
     cd - > /dev/null
     
     # Wait for service to be ready
     local count=0
     while [ $count -lt 30 ]; do
-        if curl -s -f "http://localhost:8000/health" > /dev/null 2>&1; then
+        if curl -s -L "http://localhost:8000/health" > /dev/null 2>&1; then
             echo "   ✅ Python service ready on port 8000"
             return 0
         fi
@@ -619,7 +620,7 @@ while true; do
         s|S) 
             echo "📋 Service-Status:"
             echo "Redis:    $(redis-cli ping 2>/dev/null || echo 'NOT RUNNING')"
-            echo "Python:   $(curl -s http://localhost:8000/health >/dev/null 2>&1 && echo 'RUNNING' || echo 'NOT RUNNING')"
+            echo "Python:   $(curl -s -L http://localhost:8000/health >/dev/null 2>&1 && echo 'RUNNING' || echo 'NOT RUNNING')"
             echo "Node.js:  $(curl -s http://localhost:3000/health >/dev/null 2>&1 && echo 'RUNNING' || echo 'NOT RUNNING')"
             echo "Frontend: $(curl -s http://localhost:5173 >/dev/null 2>&1 && echo 'RUNNING' || echo 'NOT RUNNING')"
             ;;

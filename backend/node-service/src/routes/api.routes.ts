@@ -476,7 +476,7 @@ apiRoutes.post('/internal/progress',
     
     try {
       // Import websocket service dynamically to avoid circular imports
-      const { websocketService } = await import('@/services/websocket.service');
+      const { websocketService } = await import('../services/websocket.service');
       
       // Emit progress update via WebSocket to all connected clients
       websocketService.emitJobProgress(jobId, data);

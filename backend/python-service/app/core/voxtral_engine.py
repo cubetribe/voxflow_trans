@@ -512,6 +512,36 @@ class VoxtralEngine:
         
         return audio_array, self.settings.SAMPLE_RATE
     
+    async def _prepare_audio_from_file(self, file_path: Path) -> np.ndarray:
+        """Prepare audio array from file for Two-Phase Processing."""
+        try:
+            # Load audio file
+            waveform, sample_rate = await asyncio.to_thread(torchaudio.load, str(file_path))
+            audio_array = waveform.numpy().squeeze()
+            
+            # Ensure mono
+            if audio_array.ndim > 1:
+                audio_array = np.mean(audio_array, axis=0)
+            
+            # Resample if necessary
+            if sample_rate != self.settings.SAMPLE_RATE:
+                resampler = torchaudio.transforms.Resample(
+                    orig_freq=sample_rate,
+                    new_freq=self.settings.SAMPLE_RATE,
+                )
+                audio_tensor = torch.from_numpy(audio_array).unsqueeze(0)
+                audio_array = await asyncio.to_thread(lambda: resampler(audio_tensor).squeeze().numpy())
+            
+            # Normalize to [-1, 1] range
+            if audio_array.max() > 1.0 or audio_array.min() < -1.0:
+                audio_array = audio_array / np.max(np.abs(audio_array))
+            
+            return audio_array
+            
+        except Exception as e:
+            logger.error(f"Failed to prepare audio from file {file_path}: {e}")
+            raise
+    
     async def _transcribe_mlx(
         self,
         audio: np.ndarray,
@@ -592,6 +622,7 @@ class VoxtralEngine:
         return_confidence: bool,
         chunk_length_s: Optional[int] = None,
         system_prompt: Optional[str] = None,
+        temperature: float = 0.0,
     ) -> Dict[str, Any]:
         """Transcribe using Voxtral's apply_transcrition_request API with system prompt support."""
         try:
@@ -611,13 +642,13 @@ class VoxtralEngine:
                     voxtral_language = language  # Use specified language (de, en, es, etc.)
             
             logger.info(f"Using language setting: {voxtral_language or 'auto-detect'}")
-            logger.info("Using Voxtral with temperature=0.0 for transcription mode")
+            logger.info(f"Using Voxtral with temperature={temperature} ({'transcription' if temperature == 0.0 else 'understanding'} mode)")
             
             # Build parameters dynamically
             transcription_params = {
                 "audio": [audio],
                 "format": ["wav"],
-                "temperature": 0.0,
+                "temperature": temperature,
                 "model_id": self.settings.MODEL_NAME,
                 "sampling_rate": self.settings.SAMPLE_RATE,
                 "return_tensors": "pt",
@@ -903,28 +934,161 @@ class VoxtralEngine:
                     
                     logger.debug(f"Completed chunk {completed_chunks}/{job_progress.total_chunks}")
                 
-                # TEMPORARILY DISABLED: Smart overlap removal (was causing 28% text loss)
-                # Better to have some duplicates than lose critical text content
-                # TODO: Fix overlap removal algorithm in future version
+                # 🚨 DETAILLIERTES CHUNK-MERGING DEBUG - FINDET 28% TEXTVERLUSST
+                logger.info(f"\n" + "="*80)
+                logger.info(f"🚨 CHUNK-MERGING DEBUG - ANALYZING {len(all_segments)} SEGMENTS")
+                logger.info(f"="*80)
+                
+                # DEBUG: Log every segment BEFORE merging
+                total_chars_before = 0
+                for i, segment in enumerate(all_segments):
+                    segment_text = segment.text.strip()
+                    segment_chars = len(segment_text)
+                    total_chars_before += segment_chars
+                    
+                    logger.info(f"\n📄 SEGMENT {i+1}/{len(all_segments)} (BEFORE MERGING):")
+                    logger.info(f"   📏 Length: {segment_chars:,} chars")
+                    logger.info(f"   ⏰ Time: {segment.start:.1f}s - {segment.end:.1f}s")
+                    logger.info(f"   📝 First 200 chars: '{segment_text[:200]}'")
+                    logger.info(f"   📝 Last 200 chars: '{segment_text[-200:]}'")
+                
+                logger.info(f"\n📊 TOTAL CHARS BEFORE MERGING: {total_chars_before:,}")
+                
+                # TEMPORARILY DISABLE OVERLAP REMOVAL FOR TESTING
+                logger.warning(f"⚠️  OVERLAP REMOVAL TEMPORARILY DISABLED FOR DEBUG")
+                logger.warning(f"⚠️  Testing if full text preserved without overlap removal")
+                
+                # Simple concatenation without overlap removal
+                merged_text_no_overlap = " ".join([segment.text.strip() for segment in all_segments])
+                chars_after_simple = len(merged_text_no_overlap)
+                
+                logger.info(f"\n🔍 SIMPLE MERGE (NO OVERLAP REMOVAL):")
+                logger.info(f"   📏 Length: {chars_after_simple:,} chars")
+                if total_chars_before > 0:
+                    logger.info(f"   📊 Data retention: {(chars_after_simple/total_chars_before)*100:.1f}%")
+                else:
+                    logger.error(f"   ❌ NO SEGMENTS FOUND - VOXTRAL RETURNED EMPTY RESULT!")
+                    logger.error(f"   ❌ This indicates a critical Voxtral processing failure")
+                logger.info(f"   📝 First 300 chars: '{merged_text_no_overlap[:300]}'")
+                logger.info(f"   📝 Last 300 chars: '{merged_text_no_overlap[-300:]}'")
+                
+                # NOW TEST WITH OVERLAP REMOVAL
+                logger.info(f"\n🔧 TESTING OVERLAP REMOVAL:")
                 if len(all_segments) > 1:
-                    logger.warning(f"⚠️  Overlap removal DISABLED - {len(all_segments)} segments kept intact to prevent text loss")
-                    logger.warning(f"⚠️  This may result in some duplicate text at chunk boundaries")
-                    # all_segments = self._remove_overlap_duplicates(all_segments, request.processing_config.overlap_seconds)
+                    cleaned_segments = self._remove_overlap_duplicates(all_segments, request.processing_config.overlap_seconds)
+                    merged_text_cleaned = " ".join([segment.text.strip() for segment in cleaned_segments])
+                    chars_after_cleaned = len(merged_text_cleaned)
+                    
+                    logger.info(f"   📏 Length after overlap removal: {chars_after_cleaned:,} chars")
+                    if total_chars_before > 0:
+                        logger.info(f"   📊 Data retention: {(chars_after_cleaned/total_chars_before)*100:.1f}%")
+                        logger.info(f"   💀 Data loss: {((total_chars_before-chars_after_cleaned)/total_chars_before)*100:.1f}%")
+                    else:
+                        logger.error(f"   ❌ Cannot calculate retention - no original segments")
+                    logger.info(f"   📝 First 300 chars: '{merged_text_cleaned[:300]}'")
+                    logger.info(f"   📝 Last 300 chars: '{merged_text_cleaned[-300:]}'")
+                    
+                    # CHOOSE WHICH VERSION TO USE
+                    data_loss_percent = ((total_chars_before-chars_after_cleaned)/total_chars_before)*100
+                    if data_loss_percent > 5:
+                        logger.warning(f"🚨 OVERLAP REMOVAL CAUSES {data_loss_percent:.1f}% DATA LOSS - USING SIMPLE MERGE")
+                        all_segments = all_segments  # Keep original
+                    else:
+                        logger.info(f"✅ Overlap removal acceptable: {data_loss_percent:.1f}% loss")
+                        all_segments = cleaned_segments  # Use cleaned
+                else:
+                    logger.info(f"   📄 Single segment - no overlap removal needed")
+                
+                logger.info(f"\n🎯 FINAL MERGE DECISION:")
+                final_text = " ".join([segment.text.strip() for segment in all_segments])
+                logger.info(f"   📏 Final text length: {len(final_text):,} chars")
+                if total_chars_before > 0:
+                    logger.info(f"   📊 Data retention: {(len(final_text)/total_chars_before)*100:.1f}%")
+                else:
+                    logger.error(f"   ❌ NO DATA TO RETAIN - CRITICAL VOXTRAL FAILURE")
+                logger.info(f"="*80)
+                
+                # TWO-PHASE PROCESSING: Phase 1 complete, check for Phase 2
+                phase1_text = " ".join([segment.text.strip() for segment in all_segments])
+                phase2_result = None
+                processing_mode = "transcription-only"
+                
+                # Check if Two-Phase Processing should be triggered
+                should_run_phase2 = (
+                    len(chunk_results) > 1 and  # Multiple chunks
+                    hasattr(request, 'system_prompt') and request.system_prompt and  # System prompt provided
+                    request.system_prompt.strip()  # Non-empty system prompt
+                )
+                
+                if should_run_phase2:
+                    logger.info(f"🚀 STARTING TWO-PHASE PROCESSING - Phase 2 (Understanding Mode)")
+                    logger.info(f"   📄 Phase 1 complete: {len(phase1_text):,} chars transcribed")
+                    logger.info(f"   🧠 Phase 2 trigger: {len(chunk_results)} chunks + system prompt")
+                    logger.info(f"   💡 System prompt: {request.system_prompt[:100]}...")
+                    
+                    try:
+                        # Get session_id from the job_id (which is our session_id)
+                        session_id = job_id
+                        
+                        # Get chunk files for concatenation
+                        chunk_files = await self.audio_processor.get_chunk_files(session_id)
+                        
+                        if chunk_files:
+                            # Concatenate all audio chunks
+                            combined_audio_path = await self.audio_processor.concatenate_chunks(session_id)
+                            
+                            if combined_audio_path:
+                                logger.info(f"   🔗 Audio concatenation complete: {combined_audio_path}")
+                                
+                                # Phase 2: Understanding Mode with system prompt
+                                logger.info(f"   🧠 Running Phase 2: Understanding Mode (temperature=0.2)")
+                                
+                                phase2_result = await self._transcribe_pytorch(
+                                    await self._prepare_audio_from_file(combined_audio_path),
+                                    language=getattr(request, 'language', None),
+                                    return_timestamps=False,  # Focus on understanding, not timestamps
+                                    return_confidence=True,
+                                    system_prompt=request.system_prompt,
+                                    temperature=0.2  # Understanding mode
+                                )
+                                
+                                if phase2_result and phase2_result.get("text"):
+                                    processing_mode = "two-phase"
+                                    logger.info(f"   ✅ Phase 2 complete: {len(phase2_result['text']):,} chars analysis")
+                                    logger.info(f"   📊 Mode: Two-Phase Processing (Transcription + Understanding)")
+                                else:
+                                    logger.warning(f"   ⚠️ Phase 2 returned empty result - using Phase 1 only")
+                            else:
+                                logger.warning(f"   ⚠️ Audio concatenation failed - using Phase 1 only")
+                        else:
+                            logger.warning(f"   ⚠️ No chunk files found for session - using Phase 1 only")
+                            
+                    except Exception as e:
+                        logger.error(f"   ❌ Phase 2 processing failed: {e}")
+                        logger.info(f"   🔄 Graceful degradation: using Phase 1 transcription only")
+                        # Graceful degradation - continue with Phase 1 result
+                else:
+                    logger.info(f"🎯 SINGLE-PHASE PROCESSING")
+                    if len(chunk_results) <= 1:
+                        logger.info(f"   📄 Reason: Single chunk ({len(chunk_results)})")
+                    if not (hasattr(request, 'system_prompt') and request.system_prompt):
+                        logger.info(f"   📄 Reason: No system prompt provided")
                 
                 # Finalize transcription
+                final_text = phase1_text
                 processing_time = time.time() - start_time
                 
                 if job_progress.status != ProcessingStatus.CANCELLED:
                     job_progress.status = ProcessingStatus.COMPLETED
                     job_progress.progress_percent = 100.0
                 
-                # Create response
+                # Create response with Two-Phase Processing results
                 response = TranscriptionResponse(
                     id=job_id,
                     filename=request.filename,
                     status=job_progress.status,
                     segments=all_segments,
-                    full_text=" ".join(segment.text for segment in all_segments if segment.text.strip()),
+                    full_text=final_text,
                     duration=audio_info.get("duration_seconds", 0),
                     processing_time=processing_time,
                     chunk_count=len(chunk_results),
@@ -932,6 +1096,9 @@ class VoxtralEngine:
                     completed_at=datetime.utcnow(),
                     file_size=len(request.audio_data),
                     audio_info=audio_info,
+                    processing_mode=processing_mode,
+                    analysis=phase2_result.get("text") if phase2_result else None,
+                    analysis_confidence=phase2_result.get("confidence") if phase2_result else None,
                 )
                 
                 self.total_inferences += 1
@@ -946,8 +1113,13 @@ class VoxtralEngine:
                     "chunk_count": len(chunk_results)
                 })
                 
-                # Schedule cleanup
+                # Schedule comprehensive cleanup (including Two-Phase temp files)
                 await cleanup_service.schedule_delayed_cleanup(job_id, 300)  # 5 minutes
+                
+                # Additional cleanup for Two-Phase Processing temp files
+                if processing_mode == "two-phase":
+                    # The audio processor will clean up chunk files and combined audio when session cleanup runs
+                    logger.info(f"📁 Two-Phase cleanup scheduled: session {job_id} contains chunk files + combined audio")
                 
                 logger.info(f"Transcription completed: {request.filename} in {processing_time:.2f}s")
                 

@@ -136,7 +136,15 @@ fi
 
 # Check 4: Python Version
 if command -v python3 &> /dev/null; then
-    python_version=$(python3 --version 2>&1 | awk '{print $2}')
+    # Use Python 3.12 explicitly for VoxFlow compatibility
+    if command -v python3.12 >/dev/null 2>&1; then
+        python_cmd="python3.12"
+        python_version=$(python3.12 --version 2>&1 | awk '{print $2}')
+    else
+        python_cmd="python3"
+        python_version=$(python3 --version 2>&1 | awk '{print $2}')
+        log_warning "Python 3.12 not found, using system python3: $python_version"
+    fi
     log_info "Python version: $python_version"
     echo "   ✅ Python: $python_version"
     
@@ -270,7 +278,7 @@ fi
 
 echo "   📦 Erstelle Python Virtual Environment..."
 log_info "Creating Python virtual environment"
-python3 -m venv venv
+$python_cmd -m venv venv
 
 echo "   🔧 Aktiviere Virtual Environment..."
 source venv/bin/activate

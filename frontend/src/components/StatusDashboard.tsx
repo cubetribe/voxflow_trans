@@ -27,7 +27,7 @@ const StatusItem: React.FC<{
     error: XCircle
   };
 
-  const Icon = StatusIcon[status];
+  const IconComponent = StatusIcon[status];
 
   return (
     <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
@@ -42,7 +42,7 @@ const StatusItem: React.FC<{
       </div>
       <div className="flex items-center space-x-2">
         <span className={`text-sm ${statusColors[status]}`}>{value}</span>
-        <Icon className={`w-4 h-4 ${statusColors[status]}`} />
+        <IconComponent className={`w-4 h-4 ${statusColors[status]}`} />
       </div>
     </div>
   );
