@@ -402,6 +402,23 @@ export function setupWebSocket(io: Server) {
     io.to(`job:${jobId}`).emit('job:progress', {
       jobId,
       progress,
+      currentChunk: progress.current_chunk,
+      totalChunks: progress.total_chunks,
+      timeElapsed: progress.time_elapsed,
+      timeRemaining: progress.time_remaining,
+      details: progress.details,
+      timestamp: new Date().toISOString(),
+    });
+  };
+
+  /**
+   * Broadcast service status to all connected clients
+   */
+  io.broadcastServiceStatus = (statusType: string, message: string, details?: string) => {
+    io.emit('service:status', {
+      type: statusType,
+      message,
+      details,
       timestamp: new Date().toISOString(),
     });
   };
@@ -471,6 +488,7 @@ declare module 'socket.io' {
     broadcastJobProgress: (jobId: string, progress: any) => void;
     broadcastBatchProgress: (batchId: string, progress: any) => void;
     broadcastTranscriptionResult: (sessionId: string, result: any) => void;
+    broadcastServiceStatus: (statusType: string, message: string, details?: string) => void;
     cleanup: () => Promise<void>;
   }
 }

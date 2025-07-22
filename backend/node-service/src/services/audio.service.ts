@@ -5,6 +5,7 @@ import axios from 'axios';
 import { config } from '@/config/app.config';
 import { logger } from '@/utils/logger';
 import { cleanupService } from './cleanup.service';
+import { websocketService } from './websocket.service';
 
 export interface FileUploadResult {
   fileId: string;
@@ -263,8 +264,14 @@ export class AudioService {
     }
 
     try {
+      // Emit service starting status
+      websocketService.emitServiceStatus('service:starting', 'Starting transcription services...');
+      
       // Read file data
       const fileData = await fs.readFile(file.tempPath);
+
+      // Emit model loading status  
+      websocketService.emitServiceStatus('model:loading', 'Loading Voxtral model...', 'This may take a moment on first startup');
 
       // Chunk size mapping
       const CHUNK_SIZE_MAPPING = {

@@ -335,7 +335,7 @@ class AudioProcessor:
                 "channels": audio_segment.channels,
                 "bit_depth": audio_segment.sample_width * 8,
                 "file_size_bytes": len(audio_data),
-                "estimated_chunks": max(1, int(len(audio_segment) / 1000.0 / 60.0 / 10)),  # 10-minute chunks
+                "estimated_chunks": max(1, int(len(audio_segment) / 1000.0 / 60.0 / 10)),  # Default 10-minute chunks - will be recalculated
                 "format": Path(filename).suffix.lower().lstrip('.'),
             }
     

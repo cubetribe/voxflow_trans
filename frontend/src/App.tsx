@@ -7,9 +7,10 @@ import FileManager from './components/FileManager';
 import ConfigPanel from './components/ConfigPanel';
 import SystemPromptPanel from './components/SystemPromptPanel';
 import TranscriptionOutput from './components/TranscriptionOutput';
+import ProgressPanel from './components/ProgressPanel';
 import { useSocket } from './hooks/useSocket';
 import { useSystemHealth } from './hooks/useSystemHealth';
-import { FileItem, SystemStatus, TranscriptionConfig, TranscriptionResult } from './types';
+import { FileItem, TranscriptionConfig, TranscriptionResult } from './types';
 
 function App() {
   const [files, setFiles] = useState<FileItem[]>([]);
@@ -23,18 +24,48 @@ function App() {
     language: 'de'
   });
   const [transcriptionResults, setTranscriptionResults] = useState<TranscriptionResult[]>([]);
+  const [processingStatus, setProcessingStatus] = useState({
+    type: 'idle' as const,
+    message: 'Ready',
+    isVisible: false
+  });
   
   const { socket, isConnected } = useSocket();
   const { systemStatus, isLoading: statusLoading } = useSystemHealth();
 
   useEffect(() => {
     if (socket) {
+      // Progress updates
       socket.on('job:progress', (data) => {
         setFiles(prev => prev.map(file => 
           file.jobId === data.jobId 
             ? { ...file, progress: data.progress, status: data.status }
             : file
         ));
+
+        // Update processing status
+        setProcessingStatus({
+          type: 'chunk:processing',
+          message: `Processing chunk ${data.currentChunk || 1} of ${data.totalChunks || 1}...`,
+          currentChunk: data.currentChunk,
+          totalChunks: data.totalChunks,
+          progress: data.progress,
+          timeElapsed: data.timeElapsed,
+          timeRemaining: data.timeRemaining,
+          details: data.details || 'Transcribing audio segment...',
+          isVisible: true
+        });
+      });
+
+      // Status updates from backend services
+      socket.on('service:status', (data) => {
+        setProcessingStatus(prev => ({
+          ...prev,
+          type: data.type,
+          message: data.message,
+          details: data.details,
+          isVisible: true
+        }));
       });
 
       socket.on('job:complete', (data) => {
@@ -43,6 +74,19 @@ function App() {
             ? { ...file, progress: 100, status: 'completed', resultPath: data.resultPath }
             : file
         ));
+        
+        // Update processing status
+        setProcessingStatus({
+          type: 'transcription:complete',
+          message: 'Transcription completed successfully!',
+          progress: 100,
+          isVisible: true
+        });
+
+        // Hide after 3 seconds
+        setTimeout(() => {
+          setProcessingStatus(prev => ({ ...prev, isVisible: false, type: 'idle', message: 'Ready' }));
+        }, 3000);
         
         // Add transcription result if available
         if (data.transcription) {
@@ -64,9 +108,34 @@ function App() {
             ? { ...file, status: 'error', error: data.error }
             : file
         ));
+
+        // Update processing status
+        setProcessingStatus({
+          type: 'error',
+          message: `Error: ${data.error}`,
+          isVisible: true
+        });
+      });
+
+      // Service startup events
+      socket.on('service:starting', () => {
+        setProcessingStatus({
+          type: 'service:starting',
+          message: 'Starting transcription services...',
+          isVisible: true
+        });
+      });
+
+      socket.on('model:loading', () => {
+        setProcessingStatus({
+          type: 'model:loading',
+          message: 'Loading Voxtral model...',
+          details: 'This may take a moment on first startup',
+          isVisible: true
+        });
       });
     }
-  }, [socket]);
+  }, [socket, config.systemPrompt]);
 
   const handleFilesAdded = (newFiles: FileItem[]) => {
     setFiles(prev => [...prev, ...newFiles]);
@@ -122,6 +191,12 @@ function App() {
               config={config} 
             />
             <FileManager files={files} onFileRemove={handleFileRemove} />
+            
+            {/* Progress Panel - Above AI Instructions */}
+            <ProgressPanel 
+              status={processingStatus}
+              isVisible={processingStatus.isVisible}
+            />
             
             {/* AI Instructions - Full width of left column */}
             <SystemPromptPanel 

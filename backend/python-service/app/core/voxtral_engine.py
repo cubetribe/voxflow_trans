@@ -345,6 +345,141 @@ class VoxtralEngine:
             logger.error(f"Transcription failed: {e}")
             raise RuntimeError(f"Transcription failed: {e}") from e
     
+    def _remove_overlap_duplicates(self, segments: List[TranscriptionSegment], overlap_seconds: float = 3.0) -> List[TranscriptionSegment]:
+        """
+        Production-ready smart overlap removal algorithm.
+        Removes duplicate text from overlapping regions between chunks.
+        
+        Args:
+            segments: List of transcription segments from all chunks
+            overlap_seconds: Expected overlap duration in seconds
+            
+        Returns:
+            List of segments with overlapping duplicates removed
+        """
+        if len(segments) < 2:
+            return segments
+            
+        cleaned_segments = []
+        i = 0
+        
+        while i < len(segments):
+            current_segment = segments[i]
+            
+            # Check if this segment overlaps with next segment
+            if i + 1 < len(segments):
+                next_segment = segments[i + 1]
+                
+                # Calculate overlap region
+                overlap_start = max(current_segment.start, next_segment.start - overlap_seconds)
+                overlap_end = min(current_segment.end, next_segment.start + overlap_seconds)
+                
+                if overlap_start < overlap_end:  # There is an overlap
+                    # Extract text from overlapping region
+                    current_text = current_segment.text.strip()
+                    next_text = next_segment.text.strip()
+                    
+                    # Find common ending/beginning words (fuzzy matching)
+                    duplicate_removed = self._find_and_remove_duplicate_text(current_text, next_text)
+                    
+                    if duplicate_removed:
+                        # Update current segment with cleaned text
+                        current_segment = TranscriptionSegment(
+                            start=current_segment.start,
+                            end=current_segment.end,
+                            text=duplicate_removed['current'],
+                            confidence=current_segment.confidence,
+                            speaker=current_segment.speaker
+                        )
+                        
+                        # Update next segment to avoid double processing
+                        segments[i + 1] = TranscriptionSegment(
+                            start=next_segment.start,
+                            end=next_segment.end,
+                            text=duplicate_removed['next'],
+                            confidence=next_segment.confidence,
+                            speaker=next_segment.speaker
+                        )
+            
+            cleaned_segments.append(current_segment)
+            i += 1
+            
+        logger.debug(f"Overlap removal: {len(segments)} -> {len(cleaned_segments)} segments processed")
+        return cleaned_segments
+    
+    def _find_and_remove_duplicate_text(self, current_text: str, next_text: str) -> Optional[Dict[str, str]]:
+        """
+        Find and remove duplicate text between current and next segments.
+        Uses both exact matching and fuzzy matching for robustness.
+        
+        Args:
+            current_text: Text from current chunk
+            next_text: Text from next chunk
+            
+        Returns:
+            Dict with cleaned 'current' and 'next' text, or None if no duplicates found
+        """
+        if not current_text or not next_text:
+            return None
+            
+        # Split into words for analysis
+        current_words = current_text.split()
+        next_words = next_text.split()
+        
+        if len(current_words) < 2 or len(next_words) < 2:
+            return None
+        
+        # Find overlapping words at end of current and start of next
+        max_overlap = min(len(current_words) // 2, len(next_words) // 2, 10)  # Limit to reasonable overlap
+        
+        for overlap_len in range(max_overlap, 0, -1):
+            current_ending = ' '.join(current_words[-overlap_len:])
+            next_beginning = ' '.join(next_words[:overlap_len])
+            
+            # Exact match
+            if current_ending.lower() == next_beginning.lower():
+                cleaned_current = ' '.join(current_words[:-overlap_len]) if overlap_len < len(current_words) else ""
+                cleaned_next = ' '.join(next_words[overlap_len:]) if overlap_len < len(next_words) else ""
+                
+                logger.debug(f"Exact overlap removed: '{current_ending}' ({overlap_len} words)")
+                return {'current': cleaned_current, 'next': cleaned_next}
+            
+            # Fuzzy match (80% similarity)
+            similarity = self._calculate_text_similarity(current_ending, next_beginning)
+            if similarity > 0.8:
+                cleaned_current = ' '.join(current_words[:-overlap_len]) if overlap_len < len(current_words) else ""
+                cleaned_next = ' '.join(next_words[overlap_len:]) if overlap_len < len(next_words) else ""
+                
+                logger.debug(f"Fuzzy overlap removed: '{current_ending}' ~= '{next_beginning}' ({similarity:.2f} similarity)")
+                return {'current': cleaned_current, 'next': cleaned_next}
+        
+        return None
+    
+    def _calculate_text_similarity(self, text1: str, text2: str) -> float:
+        """
+        Calculate similarity between two text strings using simple token-based approach.
+        
+        Args:
+            text1: First text string
+            text2: Second text string
+            
+        Returns:
+            Similarity score between 0.0 and 1.0
+        """
+        if not text1 or not text2:
+            return 0.0
+            
+        words1 = set(text1.lower().split())
+        words2 = set(text2.lower().split())
+        
+        if not words1 or not words2:
+            return 0.0
+            
+        intersection = len(words1 & words2)
+        union = len(words1 | words2)
+        
+        return intersection / union if union > 0 else 0.0
+
     def _prepare_audio(self, audio: Union[np.ndarray, str, Path]) -> Tuple[np.ndarray, int]:
         """Prepare audio for transcription with comprehensive preprocessing."""
         if isinstance(audio, (str, Path)):
@@ -695,8 +830,16 @@ class VoxtralEngine:
                     request.audio_data, request.filename
                 )
                 
-                # Update progress with file info
-                job_progress.total_chunks = audio_info.get("estimated_chunks", 1)
+                # Calculate correct chunk count based on actual chunk_duration_minutes
+                duration_minutes = audio_info.get("duration_minutes", 0)
+                chunk_duration = request.processing_config.chunk_duration_minutes
+                import math
+                estimated_chunks = max(1, math.ceil(duration_minutes / chunk_duration))
+                
+                # Update progress with corrected file info
+                job_progress.total_chunks = estimated_chunks
+                
+                logger.info(f"Audio: {duration_minutes:.2f}min, Chunk size: {chunk_duration}min, Estimated chunks: {estimated_chunks}")
                 
                 logger.info(f"Starting transcription: {request.filename} ({audio_info['duration_minutes']:.2f} min)")
                 
@@ -739,6 +882,11 @@ class VoxtralEngine:
                     
                     logger.debug(f"Completed chunk {completed_chunks}/{job_progress.total_chunks}")
                 
+                # Apply smart overlap removal to eliminate duplicates
+                if len(all_segments) > 1:
+                    logger.debug(f"Applying smart overlap removal to {len(all_segments)} segments")
+                    all_segments = self._remove_overlap_duplicates(all_segments, request.processing_config.overlap_seconds)
+                
                 # Finalize transcription
                 processing_time = time.time() - start_time
                 
@@ -752,7 +900,7 @@ class VoxtralEngine:
                     filename=request.filename,
                     status=job_progress.status,
                     segments=all_segments,
-                    full_text=" ".join(segment.text for segment in all_segments),
+                    full_text=" ".join(segment.text for segment in all_segments if segment.text.strip()),
                     duration=audio_info.get("duration_seconds", 0),
                     processing_time=processing_time,
                     chunk_count=len(chunk_results),

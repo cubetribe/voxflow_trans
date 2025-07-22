@@ -12,6 +12,7 @@ import { loggingMiddleware } from '@/middleware/logging.middleware';
 import { apiRoutes } from '@/routes/api.routes';
 import { healthRoutes } from '@/routes/health.routes';
 import { setupWebSocket } from '@/sockets/connection.manager';
+import { websocketService } from '@/services/websocket.service';
 import { logger } from '@/utils/logger';
 
 export function createApp() {
@@ -74,6 +75,7 @@ export function createApp() {
 
   // WebSocket setup
   setupWebSocket(io);
+  websocketService.setSocketServer(io);
 
   // Error handling
   app.use(errorHandler);
