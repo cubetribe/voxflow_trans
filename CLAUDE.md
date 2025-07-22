@@ -47,13 +47,30 @@ VoxFlow is a production-ready voice transcription platform using Mistral's Voxtr
 - **Improved Generation**: Repetition penalty (1.1), length penalty (1.0), early stopping for quality
 - **API Parameter Fixes**: Resolved missing language parameter and Pydantic model validation errors
 
-### 📝 **Version 0.9.1 Status**
+### 📝 **Version 0.9.1 Status - COMPLETED**
 - **Feature Complete**: ✅ Functional chunk-size control implemented and tested
 - **Quality Assurance**: ✅ Production-ready validation with real audio files
 - **Integration Testing**: ✅ End-to-end validation Frontend → Node.js → Python → Voxtral
 - **Documentation Updated**: ✅ README.md, CHANGELOG.md, CLAUDE.md updated for v0.9.1
-- **Git Status**: 🚀 **READY FOR COMMIT** - Version 0.9.1 production-ready
+- **Git Status**: ✅ **COMMITTED & PUSHED** - Commit: dc1b3ad (10 files changed)
 - **Error Handling**: ✅ Comprehensive validation and graceful error recovery
+- **GitHub Release**: ✅ Successfully pushed to cubetribe/voxflow_trans repository
+- **System Status**: ✅ All services operational (Node.js:3000, Python:8000, Frontend:5173, Redis:6379)
+
+### 🎯 **Version 0.9.1 Implementation Summary**
+- **Chunk-Size Control**: Klein(3min) | Mittel(5min) | Groß(10min) selector
+- **Backend Integration**: CHUNK_SIZE_MAPPING → ProcessingConfig.chunk_duration_minutes
+- **Frontend Enhancement**: Purple highlight 3-button selector in ConfigPanel
+- **API Validation**: Zod schema for chunkSizeMode parameter
+- **Production Testing**: German audio transcription verified ("Ich habe es nicht verstunden.")
+- **Performance**: Processing times 1.57s-2.78s, overlap preserved at 10 seconds
+
+### 🧪 **Current Test Status**
+- **Ready for Large File Testing**: System stable and all services operational
+- **Test Audio Files Available**: /Audio-TEST/ directory with ElevenLabs samples
+- **Chunk-Size Testing**: Small/Medium/Large modes validated with short files
+- **Next Phase**: Testing with large audio files to validate chunk processing at scale
+- **System Recovery**: State documented in CLAUDE.md in case of system restart
 
 ## Development Commands
 
