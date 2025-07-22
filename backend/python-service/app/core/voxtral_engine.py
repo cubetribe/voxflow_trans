@@ -903,10 +903,13 @@ class VoxtralEngine:
                     
                     logger.debug(f"Completed chunk {completed_chunks}/{job_progress.total_chunks}")
                 
-                # Apply smart overlap removal to eliminate duplicates
+                # TEMPORARILY DISABLED: Smart overlap removal (was causing 28% text loss)
+                # Better to have some duplicates than lose critical text content
+                # TODO: Fix overlap removal algorithm in future version
                 if len(all_segments) > 1:
-                    logger.debug(f"Applying smart overlap removal to {len(all_segments)} segments")
-                    all_segments = self._remove_overlap_duplicates(all_segments, request.processing_config.overlap_seconds)
+                    logger.warning(f"⚠️  Overlap removal DISABLED - {len(all_segments)} segments kept intact to prevent text loss")
+                    logger.warning(f"⚠️  This may result in some duplicate text at chunk boundaries")
+                    # all_segments = self._remove_overlap_duplicates(all_segments, request.processing_config.overlap_seconds)
                 
                 # Finalize transcription
                 processing_time = time.time() - start_time

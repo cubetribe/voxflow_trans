@@ -185,7 +185,7 @@ class ProgressNotifier:
             "status": "completed",
             "progress_percent": 100.0,
             "processing_time": result.get("processing_time"),
-            "total_segments": len(result.get("segments", [])),
+            "total_segments": result.get("segments", 0) if isinstance(result.get("segments"), int) else len(result.get("segments", [])),
             "full_text_length": len(result.get("full_text", "")),
             "confidence": result.get("confidence")
         }
